@@ -8,14 +8,15 @@
 
 #define FIELD_COUNT 4
 
-static FIELD *field[5];
 static FORM *form;
+static FIELD *field[5];
 static WINDOW *win_body, *win_form;
 static char *keys[] = {
     "portnumber",
     "subprocess"
 };
 
+// Trims whitespaces to be used for field buffers
 static char* trim_whitespaces(char *str) {
 	char *end;
 
@@ -38,15 +39,31 @@ static char* trim_whitespaces(char *str) {
 	return str;
 }
 
-static void write_config_file(char *key, char *value) {
+// Clears the config file
+static void clear_config_file(void) {
 
     FILE *fptr;
 
-    fptr = fopen("config.txt", "a");
+    fptr = fopen("config.conf", "w");
     if (fptr == NULL) {
         printf("error!");
         exit(EXIT_FAILURE);
     }
+    fflush(fptr);
+    fclose(fptr);
+}
+
+// Appends the given key-value pair into the config file
+static void write_config_file(char *key, char *value) {
+
+    FILE *fptr;
+
+    fptr = fopen("config.conf", "a");
+    if (fptr == NULL) {
+        printf("error!");
+        exit(EXIT_FAILURE);
+    }
+
     fputs(key, fptr);
     fputs("=", fptr);
     fprintf(fptr, "%s\n", value);
@@ -54,6 +71,7 @@ static void write_config_file(char *key, char *value) {
     fclose(fptr);
 }
 
+// Executes specific actions depending on user's keystroke
 static void driver(int ch) {
 	int i;
     int label_count = 0;
@@ -65,8 +83,8 @@ static void driver(int ch) {
 			form_driver(form, REQ_PREV_FIELD);
 			move(LINES-3, 2);
 
-			for (i = 1; field[i]; i++) {
-				// printw("%s", trim_whitespaces(field_buffer(field[i], 0)));
+            clear_config_file();
+			for (i = 0; field[i]; i++) {
                 // display-only fields are at an even index
                 // input-only fields are at an odd index
                 // if we're at an input label, call write function
@@ -74,7 +92,10 @@ static void driver(int ch) {
                     char *current = trim_whitespaces(field_buffer(field[i], 0));
                     write_config_file(keys[label_count++], current);
                 }
+
 			}
+
+            printw("Configurations written in config.conf");
 
 			refresh();
 			pos_form_cursor(form);
@@ -168,10 +189,12 @@ int main() {
     wrefresh(win_body); // wrefresh for the windows
     wrefresh(win_form);
 
+    // read loop
     while ((ch = getch()) != KEY_F(2)) {
         driver(ch);
     }
 
+    // form and window clean up
     unpost_form(form);
     free_form(form);
     // freeing each field

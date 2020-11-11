@@ -4,12 +4,17 @@
 #include <form.h>
 #include <string.h>
 #include <ctype.h> // for isspace
+#include <stdlib.h>
 
 #define FIELD_COUNT 4
 
 static FIELD *field[5];
 static FORM *form;
 static WINDOW *win_body, *win_form;
+static char *keys[] = {
+    "portnumber",
+    "subprocess"
+};
 
 static char* trim_whitespaces(char *str) {
 	char *end;
@@ -33,8 +38,25 @@ static char* trim_whitespaces(char *str) {
 	return str;
 }
 
+static void write_config_file(char *key, char *value) {
+
+    FILE *fptr;
+
+    fptr = fopen("config.txt", "a");
+    if (fptr == NULL) {
+        printf("error!");
+        exit(EXIT_FAILURE);
+    }
+    fputs(key, fptr);
+    fputs("=", fptr);
+    fprintf(fptr, "%s\n", value);
+    fflush(fptr);
+    fclose(fptr);
+}
+
 static void driver(int ch) {
 	int i;
+    int label_count = 0;
 
 	switch (ch) {
 		case KEY_F(4):
@@ -43,13 +65,15 @@ static void driver(int ch) {
 			form_driver(form, REQ_PREV_FIELD);
 			move(LINES-3, 2);
 
-			for (i = 0; field[i]; i++) {
-				printw("%s", trim_whitespaces(field_buffer(field[i], 0)));
-
-				if (field_opts(field[i]) & O_ACTIVE)
-					printw("\"\t");
-				else
-					printw(" \"");
+			for (i = 1; field[i]; i++) {
+				// printw("%s", trim_whitespaces(field_buffer(field[i], 0)));
+                // display-only fields are at an even index
+                // input-only fields are at an odd index
+                // if we're at an input label, call write function
+                if (i % 2 != 0) { 
+                    char *current = trim_whitespaces(field_buffer(field[i], 0));
+                    write_config_file(keys[label_count++], current);
+                }
 			}
 
 			refresh();
@@ -93,6 +117,7 @@ static void driver(int ch) {
 	wrefresh(win_form);
 }
 
+
 int main() {
 
     int ch;
@@ -103,7 +128,13 @@ int main() {
     cbreak();
     keypad(stdscr, TRUE); // toggling arrows, other keypad btns are usable
 
-    mvwprintw(win_body, 1, 2, "Press F2 to quit and F4 to print fields content");
+    win_body = newwin(24, 80, 0, 0);
+    win_form = derwin(win_body, 20, 78, 4, 1);
+
+    // printing basic info about gui program
+    mvwprintw(win_body, 1, 2, "Configuration File Editor");
+    mvwprintw(win_body, 2, 2, "Use arrow keys to navigate between fields.");
+    mvwprintw(win_body, 3, 2, "Press F2 to quit and F4 to confirm server configurations.");
 
     // making fields
     field[0] = new_field(1, 25, 0, 0, 0, 0); // port number label

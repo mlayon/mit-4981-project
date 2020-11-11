@@ -1,74 +1,158 @@
-// https://tldp.org/HOWTO/NCURSES-Programming-HOWTO/forms.html
-// second example 
+// How to run:
+// gcc -std=c11 -Wall -Werror -pedantic -o gui gui.c -lform -lncurses
+#include <ncurses.h>
 #include <form.h>
+#include <string.h>
+#include <ctype.h> // for isspace
+
+#define FIELD_COUNT 4
+
+static FIELD *field[5];
+static FORM *form;
+static WINDOW *win_body, *win_form;
+
+static char* trim_whitespaces(char *str) {
+	char *end;
+
+	// trim leading space
+	while(isspace(*str))
+		str++;
+
+	if(*str == 0) // all spaces?
+		return str;
+
+	// trim trailing space
+	end = str + strnlen(str, 128) - 1;
+
+	while(end > str && isspace(*end))
+		end--;
+
+	// write new null terminator
+	*(end+1) = '\0';
+
+	return str;
+}
+
+static void driver(int ch) {
+	int i;
+
+	switch (ch) {
+		case KEY_F(4):
+			// Or the current field buffer won't be sync with what is displayed
+			form_driver(form, REQ_NEXT_FIELD);
+			form_driver(form, REQ_PREV_FIELD);
+			move(LINES-3, 2);
+
+			for (i = 0; field[i]; i++) {
+				printw("%s", trim_whitespaces(field_buffer(field[i], 0)));
+
+				if (field_opts(field[i]) & O_ACTIVE)
+					printw("\"\t");
+				else
+					printw(" \"");
+			}
+
+			refresh();
+			pos_form_cursor(form);
+			break;
+
+		case KEY_DOWN:
+			form_driver(form, REQ_NEXT_FIELD);
+			form_driver(form, REQ_END_LINE);
+			break;
+
+		case KEY_UP:
+			form_driver(form, REQ_PREV_FIELD);
+			form_driver(form, REQ_END_LINE);
+			break;
+
+		case KEY_LEFT:
+			form_driver(form, REQ_PREV_CHAR);
+			break;
+
+		case KEY_RIGHT:
+			form_driver(form, REQ_NEXT_CHAR);
+			break;
+
+		// Delete the char before cursor
+		case KEY_BACKSPACE:
+		case 127:
+			form_driver(form, REQ_DEL_PREV);
+			break;
+
+		// Delete the char under the cursor
+		case KEY_DC:
+			form_driver(form, REQ_DEL_CHAR);
+			break;
+
+		default:
+			form_driver(form, ch);
+			break;
+	}
+
+	wrefresh(win_form);
+}
 
 int main() {
-    FIELD *field[3];
-    FORM *my_form;
+
     int ch;
-
-    // init curses
+    
+    // initializing ncurses
     initscr();
-    start_color();
-    cbreak();
     noecho();
-    keypad(stdscr, TRUE);
+    cbreak();
+    keypad(stdscr, TRUE); // toggling arrows, other keypad btns are usable
 
-    // init color pairs
-    init_pair(1, COLOR_WHITE, COLOR_BLUE);
-    init_pair(2, COLOR_WHITE, COLOR_BLUE);
+    mvwprintw(win_body, 1, 2, "Press F2 to quit and F4 to print fields content");
 
-    // init the fields
-    field[0] = new_field(1, 10, 4, 18, 0, 0);
-    field[1] = new_field(1, 10, 6, 18, 0, 0);
-    field[2] = NULL;
+    // making fields
+    field[0] = new_field(1, 25, 0, 0, 0, 0); // port number label
+	field[1] = new_field(1, 40, 0, 30, 0, 0);
+	field[2] = new_field(1, 25, 2, 0, 0, 0); // thread/process label
+	field[3] = new_field(1, 40, 2, 30, 0, 0);
+    field[4] = NULL; // declaring last field in array as null because it's like a linkedlist
 
-    // set field options
-    set_field_fore(field[0], COLOR_PAIR(1)); // put field with white foreground -> chars printed in white
-    set_field_back(field[0], COLOR_PAIR(2)); // put field with blue background
+    // setting the field buffers
+    set_field_buffer(field[0], 0, "Port number: ");
+    set_field_buffer(field[1], 0, "49157");
+    set_field_buffer(field[2], 0, "Thread or Process (t/p): ");
+    set_field_buffer(field[3], 0, "t");
 
-    field_opts_off(field[0], O_AUTOSKIP); // don't go to next field when this field is filled up
+    set_field_opts(field[0], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
+	set_field_opts(field[1], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
+	set_field_opts(field[2], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
+	set_field_opts(field[3], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
 
-    set_field_back(field[1], A_UNDERLINE);
-    field_opts_off(field[1], O_AUTOSKIP);
+    // adding underlines on the fill-able fields for readability
+    set_field_back(field[1], A_UNDERLINE); 
+	set_field_back(field[3], A_UNDERLINE);
 
-    // create the form and post it
-    my_form = new_form(field);
-    post_form(my_form);
-    refresh();
+    // setting form into window
+    form = new_form(field);
+    set_form_win(form, win_form);
+    set_form_sub(form, derwin(win_form, 18, 76, 1, 1));
+    post_form(form);
 
-    set_current_field(my_form, field[0]); // set focus to the colored field
-    mvprintw(4, 10, "Value 1:");
-    mvprintw(6, 10, "Value 2:");
-    mvprintw(LINES - 2, 0, "Use UP, DOWN arrow keys to switch between fields");
-    refresh();
+    refresh(); // refresh for the stdscr itself 
+    wrefresh(win_body); // wrefresh for the windows
+    wrefresh(win_form);
 
-    // loop through to get user requests
-    while ((ch = getch()) != KEY_F(1)) {
-
-        switch(ch) {
-            case KEY_DOWN: // go to next field
-                form_driver(my_form, REQ_NEXT_FIELD);
-                // go to the end of the present buffer
-                // leaves nicely at the last chracter
-                form_driver(my_form, REQ_END_LINE);
-                break;
-            case KEY_UP: // go to prev field
-                form_driver(my_form, REQ_PREV_FIELD);
-                form_driver(my_form, REQ_END_LINE);
-                break;
-            default: // if this is a normal character it gets printed
-                form_driver(my_form, ch);
-                break;
-        }
+    while ((ch = getch()) != KEY_F(2)) {
+        driver(ch);
     }
 
-    // unpost form and free the memory
-    unpost_form(my_form);
-    free_form(my_form);
-    free_field(field[0]);
-    free_field(field[1]);
-
+    unpost_form(form);
+    free_form(form);
+    // freeing each field
+    for (int i = 0; i < FIELD_COUNT; i++) {
+        free_field(field[i]);
+    }
+    delwin(win_form);
+    delwin(win_body);
     endwin();
+
     return 0;
+
 }
+
+

@@ -1,5 +1,5 @@
 // How to run:
-// gcc -std=c11 -Wall -Werror -pedantic -o server-config.c config.c
+// gcc -std=c11 -Wall -Werror -pedantic -o server-config server-config.c config.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -24,18 +24,20 @@ int main(int argc, const char * argv[])
     Config conf;
     struct sockaddr_in addr;
     int sfd;
-    int status; // get_config status
+    int parse_status; // get_config status
 
     // Testing get_config functions
     // If file name provided, use get_config_file func with file name parameter
-    if (argc > 1) {
-        status = get_config_file(&conf, argv[1]);
-    }
-    else {
-        status = get_config_defaults(&conf);
-    }
+    // if (argc > 1) {
+    //     status = get_config_file(&conf);
+    // }
+    // else {
+    //     status = get_config_defaults(&conf);
+    // }
+    parse_status = get_config_file(&conf);
+    // parse_status = get_config_defaults(&conf);
 
-    if(status == 0) {
+    if(parse_status == 0) {
         perror("ERROR while parsing configuration file");
         return 0;
     }
@@ -47,6 +49,9 @@ int main(int argc, const char * argv[])
     } 
     printf("port: %d\n", conf.port);
     printf("subprocess: %c\n", conf.subprocess);
+    printf("root: %s\n", conf.root);
+    printf("errorpage: %s\n", conf.errorpage);
+    // printf("root: %s\n", conf.root);
 
 
     memset(&addr, 0, sizeof(struct sockaddr_in));

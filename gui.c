@@ -12,7 +12,7 @@ static FORM *form;
 static FIELD *field[5];
 static WINDOW *win_body, *win_form;
 static char *keys[] = {
-    "portnumber",
+    "port",
     "subprocess"
 };
 

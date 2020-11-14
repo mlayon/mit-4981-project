@@ -5,3 +5,6 @@ Team Name: MIT
 Tiffany Gu
 Iris Law
 Mikhaela Layon
+
+
+Tiffany: pthread in progress

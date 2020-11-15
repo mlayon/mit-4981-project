@@ -21,56 +21,17 @@ HTTP server that serves static and
 #define BUFSIZE 1024
 #define MAXERRS 16
 
-char *errorFile = "404.html";
-//char *htmlRoot = "./docs/docs2";
-//default root = 
-char *htmlRoot = ".";
+char *errorfile = "404.html";
+//char *html_root = "./docs/docs2";
+//default root
+char *html_root = ".";
 
-void getErrorCheck(FILE *stream, char m[]);
 void parse_url(char filename[], char uri[], char cgiargs[]);
 void display_content(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
-/*
- * error - wrapper for perror used for bad syscalls
- */
-void error(char *msg)
-{
-    perror(msg);
-    exit(1);
-}
-
-/**
- * Get the size of a file.
- * @return The filesize, or 0 if the file does not exist.
- */
-size_t getFilesize(const char *filename)
-{
-    struct stat st;
-    if (stat(filename, &st) != 0)
-    {
-        return 0;
-    }
-    return st.st_size;
-}
-/*
- * cerror - returns an error message to the client
- */
-void cerror(FILE *stream, char *cause, char *errorFile)
-{
-
-    int size404 = getFilesize(errorFile);
-    /* print response header */
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Content-length: %d\n", size404);
-    fprintf(stream, "Content-type: text/html\n");
-    fprintf(stream, "\r\n");
-    fflush(stream);
-
-    /* Use mmap to return arbitrary-sized response body */
-    int fd = open("404.html", O_RDONLY);
-    char *p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
-    fwrite(p, 1, size404, stream);
-    munmap(p, size404);
-}
+void cerror(FILE *stream, char *cause, char *errorfile);
+size_t get_file_size(const char *filename);
+void get_error_check(FILE *stream, char m[]);
+void bind_port(int parentfd,struct sockaddr_in serveraddr, int portno);
 
 int main(int argc, char **argv)
 {
@@ -121,13 +82,8 @@ int main(int argc, char **argv)
                (const void *)&optval, sizeof(int));
 
     /* bind port to socket */
-    bzero((char *)&serveraddr, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddr.sin_port = htons((unsigned short)portno);
-    if (bind(parentfd, (struct sockaddr *)&serveraddr,
-             sizeof(serveraddr)) < 0)
-        error("ERROR on binding");
+bind_port( parentfd, serveraddr, portno );
+
 
     /* getting ready to accept connection requests */
     if (listen(parentfd, 5) < 0) /* allow 5 requests to queue up */
@@ -188,7 +144,6 @@ int main(int argc, char **argv)
         }
 
         /* parse the url (/filename.html)] */
-        //htmlRoot
         if (!strstr(uri, "cgi-bin"))
         { /* static content */
             is_static = 1;
@@ -199,7 +154,7 @@ int main(int argc, char **argv)
         /* make sure the file exists */
         if (stat(filename, &sbuf) < 0)
         {
-            cerror(stream, filename, errorFile);
+            cerror(stream, filename, errorfile);
             fclose(stream);
             close(childfd);
             continue;
@@ -209,7 +164,7 @@ int main(int argc, char **argv)
         if (is_static)
         {
              //   if(strcasecmp(method, "HEAD")){        
-                int sizeHead = getFilesize(filename);
+                int sizeHead = get_file_size(filename);
                printf("HEAD size of file:%d " , sizeHead);
          //   } else{   
             display_content(stream, fd, p, filename, filetype, sbuf);
@@ -222,9 +177,52 @@ int main(int argc, char **argv)
     }
 }
 
-void getErrorCheck(FILE *stream, char m[])
+/*
+ * error - wrapper for perror used for bad syscalls
+ */
+void error(char *msg)
 {
-    cerror(stream, m, errorFile);
+    perror(msg);
+    exit(1);
+}
+
+/**
+ * Get the size of a file.
+ * @return The filesize, or 0 if the file does not exist.
+ */
+size_t get_file_size(const char *filename)
+{
+    struct stat st;
+    if (stat(filename, &st) != 0)
+    {
+        return 0;
+    }
+    return st.st_size;
+}
+/*
+ * cerror - returns an error message to the client
+ */
+void cerror(FILE *stream, char *cause, char *errorfile)
+{
+
+    int size404 = get_file_size(errorfile);
+    /* print response header */
+    fprintf(stream, "HTTP/1.1 200 OK\n");
+    fprintf(stream, "Content-length: %d\n", size404);
+    fprintf(stream, "Content-type: text/html\n");
+    fprintf(stream, "\r\n");
+    fflush(stream);
+
+    /* Use mmap to return arbitrary-sized response body */
+    int fd = open(errorfile, O_RDONLY);
+    char *p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
+    fwrite(p, 1, size404, stream);
+    munmap(p, size404);
+}
+
+void get_error_check(FILE *stream, char m[])
+{
+    cerror(stream, m, errorfile);
     fclose(stream);
 }
 
@@ -254,9 +252,21 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
 void parse_url(char filename[], char uri[], char cgiargs[])
 {
     strcpy(cgiargs, "");
-    strcpy(filename, htmlRoot);
+    strcpy(filename, html_root);
     strcat(filename, uri);
     //  printf("Uri: %s", uri); // this is the url
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
+}
+
+void bind_port(int parentfd,struct sockaddr_in serveraddr, int portno ){
+
+    bzero((char *)&serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serveraddr.sin_port = htons((unsigned short)portno);
+    if (bind(parentfd, (struct sockaddr *)&serveraddr,
+             sizeof(serveraddr)) < 0)
+        error("ERROR on binding");
+
 }

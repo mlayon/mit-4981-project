@@ -21,6 +21,11 @@ HTTP server that serves static and
 #define BUFSIZE 1024
 #define MAXERRS 16
 
+char *errorFile = "404.html";
+//char *htmlRoot = "./docs/docs2";
+//default root = 
+char *htmlRoot = ".";
+
 void getErrorCheck(FILE *stream, char m[]);
 void parse_url(char filename[], char uri[], char cgiargs[]);
 void display_content(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
@@ -33,21 +38,38 @@ void error(char *msg)
     exit(1);
 }
 
+/**
+ * Get the size of a file.
+ * @return The filesize, or 0 if the file does not exist.
+ */
+size_t getFilesize(const char *filename)
+{
+    struct stat st;
+    if (stat(filename, &st) != 0)
+    {
+        return 0;
+    }
+    return st.st_size;
+}
 /*
  * cerror - returns an error message to the client
  */
-void cerror(FILE *stream, char *cause, char *errno,
-            char *shortmsg, char *longmsg)
+void cerror(FILE *stream, char *cause, char *errorFile)
 {
-    fprintf(stream, "HTTP/1.1 %s %s\n", errno, shortmsg);
+
+    int size404 = getFilesize(errorFile);
+    /* print response header */
+    fprintf(stream, "HTTP/1.1 200 OK\n");
+    fprintf(stream, "Content-length: %d\n", size404);
     fprintf(stream, "Content-type: text/html\n");
-    fprintf(stream, "\n");
-    fprintf(stream, "<html><title>Error</title>");
-    fprintf(stream, "<body bgcolor="
-                    "ffffff"
-                    ">\n");
-    fprintf(stream, "%s: %s\n", errno, shortmsg);
-    fprintf(stream, "<p>%s: %s\n", longmsg, cause);
+    fprintf(stream, "\r\n");
+    fflush(stream);
+
+    /* Use mmap to return arbitrary-sized response body */
+    int fd = open("404.html", O_RDONLY);
+    char *p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
+    fwrite(p, 1, size404, stream);
+    munmap(p, size404);
 }
 
 int main(int argc, char **argv)
@@ -141,17 +163,17 @@ int main(int argc, char **argv)
         /* get the HTTP request line */
         fgets(buf, BUFSIZE, stream);
         //testing head
-        //   char bufHead[25] = "HEAD /index.html HTTP/1.1";
-        //  memcpy(buf,bufHead, strlen(bufHead));
-        printf("Request line!%s", buf);
+        char bufHead[25] = "HEAD /index.html HTTP/1.1";
+     
+        printf("Request line! %s\n", buf);
+        printf("Request line head! %s\n", bufHead);
         sscanf(buf, "%s %s %s\n", method, uri, version);
 
         //compare GET METHOD
         printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
         if (strcasecmp(method, "GET"))
         {
-            printf("Yoo");
-          //  getErrorCheck(stream, method);
+            //  getErrorCheck(stream, method);
             close(childfd);
             continue;
         }
@@ -166,18 +188,18 @@ int main(int argc, char **argv)
         }
 
         /* parse the url (/filename.html)] */
+        //htmlRoot
         if (!strstr(uri, "cgi-bin"))
         { /* static content */
             is_static = 1;
 
-           parse_url(filename, uri, cgiargs);
+            parse_url(filename, uri, cgiargs);
         }
 
         /* make sure the file exists */
         if (stat(filename, &sbuf) < 0)
         {
-            cerror(stream, filename, "404", "Not found",
-                   "Could not find file.");
+            cerror(stream, filename, errorFile);
             fclose(stream);
             close(childfd);
             continue;
@@ -186,7 +208,12 @@ int main(int argc, char **argv)
         /* Display content */
         if (is_static)
         {
+             //   if(strcasecmp(method, "HEAD")){        
+                int sizeHead = getFilesize(filename);
+               printf("HEAD size of file:%d " , sizeHead);
+         //   } else{   
             display_content(stream, fd, p, filename, filetype, sbuf);
+          //  }
         }
 
         /* clean up */
@@ -197,8 +224,7 @@ int main(int argc, char **argv)
 
 void getErrorCheck(FILE *stream, char m[])
 {
-    cerror(stream, m, "501", "Not Implemented",
-           "Does not implement this method");
+    cerror(stream, m, errorFile);
     fclose(stream);
 }
 
@@ -225,11 +251,12 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     munmap(p, sbuf.st_size);
 }
 
-void parse_url(char filename[], char uri[], char cgiargs[]){
-              strcpy(cgiargs, "");
-            strcpy(filename, ".");
-            strcat(filename, uri);
-            printf("Uri: %s", uri); // this is the url 
-            if (uri[strlen(uri) - 1] == '/')
-                strcat(filename, "index.html");
+void parse_url(char filename[], char uri[], char cgiargs[])
+{
+    strcpy(cgiargs, "");
+    strcpy(filename, htmlRoot);
+    strcat(filename, uri);
+    //  printf("Uri: %s", uri); // this is the url
+    if (uri[strlen(uri) - 1] == '/')
+        strcat(filename, "index.html");
 }

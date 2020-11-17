@@ -96,7 +96,7 @@ int main(int argc, char **argv)
     // acceptRequest(clientaddr, parentfd);
     pthread_t thread_id;
     int i = 0;
-    int j = 0;
+
     printf("Before Thread\n");
     while (i < 10)
     {

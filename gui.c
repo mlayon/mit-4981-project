@@ -9,11 +9,13 @@
 #define FIELD_COUNT 4
 
 static FORM *form;
-static FIELD *field[5];
+static FIELD *field[9];
 static WINDOW *win_body, *win_form;
 static char *keys[] = {
     "port",
-    "subprocess"
+    "subprocess",
+    "root",
+    "error"
 };
 
 // Trims whitespaces to be used for field buffers
@@ -162,22 +164,36 @@ int main() {
 	field[1] = new_field(1, 40, 0, 30, 0, 0);
 	field[2] = new_field(1, 25, 2, 0, 0, 0); // thread/process label
 	field[3] = new_field(1, 40, 2, 30, 0, 0);
-    field[4] = NULL; // declaring last field in array as null because it's like a linkedlist
+    field[4] = new_field(1, 25, 4, 0, 0, 0); // root directory label
+	field[5] = new_field(1, 40, 4, 30, 0, 0);
+    field[6] = new_field(1, 25, 6, 0, 0, 0); // 404 page label
+	field[7] = new_field(1, 40, 6, 30, 0, 0);
+    field[8] = NULL; // declaring last field in array as null because it's like a linkedlist
 
     // setting the field buffers
-    set_field_buffer(field[0], 0, "Port number: ");
+    set_field_buffer(field[0], 0, "Port Number: ");
     set_field_buffer(field[1], 0, "49157");
     set_field_buffer(field[2], 0, "Thread or Process (t/p): ");
     set_field_buffer(field[3], 0, "t");
+    set_field_buffer(field[4], 0, "Root Directory: ");
+    set_field_buffer(field[5], 0, ".");
+    set_field_buffer(field[6], 0, "404 Page: ");
+    set_field_buffer(field[7], 0, "404.html");
 
     set_field_opts(field[0], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
 	set_field_opts(field[1], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
 	set_field_opts(field[2], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
 	set_field_opts(field[3], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
+    set_field_opts(field[4], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
+	set_field_opts(field[5], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
+    set_field_opts(field[6], O_VISIBLE | O_PUBLIC | O_AUTOSKIP);
+	set_field_opts(field[7], O_VISIBLE | O_PUBLIC | O_EDIT | O_ACTIVE);
 
     // adding underlines on the fill-able fields for readability
     set_field_back(field[1], A_UNDERLINE); 
 	set_field_back(field[3], A_UNDERLINE);
+    set_field_back(field[5], A_UNDERLINE);
+    set_field_back(field[7], A_UNDERLINE);
 
     // setting form into window
     form = new_form(field);

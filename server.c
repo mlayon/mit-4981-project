@@ -21,17 +21,20 @@ HTTP server that serves static and
 #define BUFSIZE 1024
 #define MAXERRS 16
 
+//CONFIG INFORMATION
 char *errorfile = "404.html";
 //char *html_root = "./docs/docs2";
 //default root
 char *html_root = ".";
+//To test HEAD request: wget -S --spider http://localhost:8000/tester.html 
+//or curl -I http://localhost:8000/tester.html 
 
 void parse_url(char filename[], char uri[], char cgiargs[]);
 void display_content(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
 void cerror(FILE *stream, char *cause, char *errorfile);
 size_t get_file_size(const char *filename);
 void get_error_check(FILE *stream, char m[]);
-void bind_port(int parentfd,struct sockaddr_in serveraddr, int portno);
+void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno);
 
 int main(int argc, char **argv)
 {
@@ -62,6 +65,7 @@ int main(int argc, char **argv)
     int fd;                 /* static content filedes */
     int pid;                /* process id from fork */
     int wait_status;        /* status from wait */
+    int choice = 0;
 
     // command lines
     if (argc != 2)
@@ -82,8 +86,7 @@ int main(int argc, char **argv)
                (const void *)&optval, sizeof(int));
 
     /* bind port to socket */
-bind_port( parentfd, serveraddr, portno );
-
+    bind_port(parentfd, serveraddr, portno);
 
     /* getting ready to accept connection requests */
     if (listen(parentfd, 5) < 0) /* allow 5 requests to queue up */
@@ -118,22 +121,27 @@ bind_port( parentfd, serveraddr, portno );
 
         /* get the HTTP request line */
         fgets(buf, BUFSIZE, stream);
-        //testing head
-        char bufHead[25] = "HEAD /index.html HTTP/1.1";
-     
-        printf("Request line! %s\n", buf);
-        printf("Request line head! %s\n", bufHead);
+
+        //Request line head! "GET /filename.html";
+        printf("%s", buf);
+
         sscanf(buf, "%s %s %s\n", method, uri, version);
 
         //compare GET METHOD
-        printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
-        if (strcasecmp(method, "GET"))
+        //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
+        if (strcmp(method, "GET"))
         {
-            //  getErrorCheck(stream, method);
-            close(childfd);
-            continue;
-        }
 
+            if (strcasecmp(method, "HEAD"))
+            {
+                get_error_check(stream, method);
+                close(childfd);
+                continue;
+            }
+
+            //  printf("choice = 1 this");
+            choice = 1;
+        }
 
         /* read (and ignore) the HTTP headers */
         fgets(buf, BUFSIZE, stream);
@@ -161,14 +169,28 @@ bind_port( parentfd, serveraddr, portno );
         }
 
         /* Display content */
-        if (is_static)
+        if (is_static && choice == 0)
         {
-             //   if(strcasecmp(method, "HEAD")){        
-                int sizeHead = get_file_size(filename);
-               printf("HEAD size of file:%d " , sizeHead);
-         //   } else{   
+            printf("\nGet method: \n");
             display_content(stream, fd, p, filename, filetype, sbuf);
-          //  }
+        }
+        else
+        {
+            printf("\nHead method: \n");
+         //   int sizeHead = get_file_size(filename);
+         //   printf("HEAD size of file:%d ", sizeHead);
+            if (strstr(filename, ".html"))
+                strcpy(filetype, "text/html");
+
+            else
+                strcpy(filetype, "text/plain");
+
+            /* print response header */
+            fprintf(stream, "HTTP/1.1 200 OK\n");
+            fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+            fprintf(stream, "Content-type: %s\n", filetype);
+            fprintf(stream, "\r\n");
+            fflush(stream);
         }
 
         /* clean up */
@@ -259,7 +281,8 @@ void parse_url(char filename[], char uri[], char cgiargs[])
         strcat(filename, "index.html");
 }
 
-void bind_port(int parentfd,struct sockaddr_in serveraddr, int portno ){
+void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno)
+{
 
     bzero((char *)&serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
@@ -268,5 +291,4 @@ void bind_port(int parentfd,struct sockaddr_in serveraddr, int portno ){
     if (bind(parentfd, (struct sockaddr *)&serveraddr,
              sizeof(serveraddr)) < 0)
         error("ERROR on binding");
-
 }

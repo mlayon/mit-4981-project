@@ -50,7 +50,7 @@ int main(int argc, const char * argv[])
     printf("port: %d\n", conf.port);
     printf("subprocess: %c\n", conf.subprocess);
     printf("root: %s\n", conf.root);
-    printf("errorpage: %s\n", conf.errorpage);
+    printf("error: %s\n", conf.error);
     // printf("root: %s\n", conf.root);
 
 
@@ -59,6 +59,7 @@ int main(int argc, const char * argv[])
     // addr.sin_port = htons(PORT);
     addr.sin_port = htons(conf.port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    free_space(&conf);
 
     // dc_bind(sfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
     if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {

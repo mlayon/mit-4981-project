@@ -18,11 +18,12 @@ int get_config_file(Config *conf) {
 
         // reading through file
         while(fgets(line, sizeof(line), file) != NULL) {
-
+            // printf("before key: %s", key);
             key = strtok(line, delimiter); // grab the token before the '=' sign
-            printf("before: %s", value);
+            // printf("after key: %s\n", key);
+            // printf("before value: %s", value);
             value = strtok(NULL, delimiter); // grab the token after the '=' sign
-            printf("after: %s\n", value);
+            // printf("after value: %s\n", value);
             if (strcmp(key, "port") == 0) {
                 conf->port = atoi(value);
 
@@ -30,11 +31,12 @@ int get_config_file(Config *conf) {
                 conf->subprocess = value[0];
 
             } else if (strcmp(key, "root") == 0) {
-                conf->root = value;
+                conf->root = malloc(strlen(value) + 1);
+                strcpy(conf->root, value);
 
             } else if (strcmp(key, "error") == 0) {
-                conf->errorpage = value;
-
+                conf->error = malloc(strlen(value) + 1);
+                strcpy(conf->error, value);
             }
         }
         fclose(file);
@@ -52,6 +54,12 @@ int get_config_defaults(Config *conf) {
     conf->port = 49157;
     conf->subprocess = 't';
     conf->root = "..";
-    conf->errorpage = "index.html";
+    conf->error = "index.html";
     return 1;
+}
+
+// Free memory allocated for root and error configs
+void free_space(Config *conf) {
+    free(conf->root);
+    free(conf->error);
 }

@@ -53,8 +53,8 @@ int get_config_file(Config *conf) {
 int get_config_defaults(Config *conf) {
     conf->port = 49157;
     conf->subprocess = 't';
-    conf->root = "..";
-    conf->error = "index.html";
+    conf->root = ".";
+    conf->error = "404.html";
     return 1;
 }
 

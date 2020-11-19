@@ -15,6 +15,8 @@
 // /etc/services
 #define PORT 49157
 
+void start_gui(void);
+
 int main(int argc, const char * argv[])
 {
     // Setting these to void to silence warnings.
@@ -26,16 +28,16 @@ int main(int argc, const char * argv[])
     int sfd;
     int parse_status; // get_config status
 
-    // Testing get_config functions
-    // If file name provided, use get_config_file func with file name parameter
-    // if (argc > 1) {
-    //     status = get_config_file(&conf);
-    // }
-    // else {
-    //     status = get_config_defaults(&conf);
-    // }
+    // If args given, check flags
+    if (argc >= 2) {
+        // If appropriate flag is given, start gui
+        if (strcmp(argv[1], "--c") == 0) {
+            start_gui();
+        }
+    }
+    
+
     parse_status = get_config_file(&conf);
-    // parse_status = get_config_defaults(&conf);
 
     if(parse_status == 0) {
         perror("ERROR while parsing configuration file");
@@ -47,11 +49,6 @@ int main(int argc, const char * argv[])
         perror("cannot create socket");
         return 0;
     } 
-    printf("port: %d\n", conf.port);
-    printf("subprocess: %c\n", conf.subprocess);
-    printf("root: %s\n", conf.root);
-    printf("error: %s\n", conf.error);
-    // printf("root: %s\n", conf.root);
 
 
     memset(&addr, 0, sizeof(struct sockaddr_in));
@@ -100,3 +97,16 @@ int main(int argc, const char * argv[])
 }
 
 
+// Creates child process and runs the gui program over it
+void start_gui(void) {
+    /*Spawn a child to run the program.*/
+    pid_t pid=fork();
+    if (pid==0) { /* child process */
+        execv("gui", NULL);
+        exit(127); /* only if execv fails */
+    }
+    else { /* pid!=0; parent process */
+        waitpid(pid,0,0); /* wait for child to exit */
+    }
+    
+}

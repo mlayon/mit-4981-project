@@ -20,6 +20,7 @@ HTTP server that serves static and
 #include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
+// #include "pthreadpool.h"
 
 #define BUFSIZE 1024
 #define MAXERRS 16
@@ -82,13 +83,13 @@ char *html_root = ".";
 //or curl -I http://localhost:8000/tester.html
 void error(char *msg);
 void parse_url(char filename[], char uri[], char cgiargs[]);
-void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
-void cerror(int childfd, FILE *stream, char *cause, char *errorfile);
+void display_content(int childfd, FILE *stream, char filename[], char filetype[], struct stat sbuf);
+void cerror(int childfd, FILE *stream, char *errorfile);
 size_t get_file_size(const char *filename);
-void get_error_check(int childfd, FILE *stream, char m[]);
+void get_error_check(int childfd, FILE *stream);
 void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno);
 void *handle_connection(void *p_client_socket);
-void *thread_function(void *arg);
+void *thread_function();
 int main(int argc, char **argv)
 {
 
@@ -96,7 +97,7 @@ int main(int argc, char **argv)
     int parentfd;                  /* parent socket */
     int childfd;                   /* child socket */
     int portno;                    /* port */
-    int clientlen;                 /* byte size of client's address */
+    socklen_t clientlen;                 /* byte size of client's address */
     struct hostent *hostp;         /* client host info */
     char *hostaddrp;               /* dotted decimal host addr string */
     int optval;                    /* flag value for setsockopt */
@@ -137,9 +138,11 @@ int main(int argc, char **argv)
    * serve requested content, close connection.
    */
     clientlen = sizeof(clientaddr);
+    
     int i = 0;
     while (true)
     {
+        //parent process waiting to accept a new connection
         /* wait for a connection request */
         childfd = accept(parentfd, (struct sockaddr *)&clientaddr, &clientlen);
         if (childfd < 0)
@@ -194,7 +197,7 @@ size_t get_file_size(const char *filename)
 /*
  * cerror - returns an error message to the client
  */
-void cerror(int childfd, FILE *stream, char *cause, char *errorfile)
+void cerror(int childfd, FILE *stream, char *errorfile)
 {
 
     int size404 = get_file_size(errorfile);
@@ -234,13 +237,13 @@ void cerror(int childfd, FILE *stream, char *cause, char *errorfile)
    
 }
 
-void get_error_check(int childfd, FILE *stream, char m[])
+void get_error_check(int childfd, FILE *stream)
 {
-    cerror(childfd, stream, m, errorfile);
+    cerror(childfd, stream, errorfile);
     fclose(stream);
 }
 
-void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
+void display_content(int childfd, FILE *stream, char filename[], char filetype[], struct stat sbuf)
 
 {
     if (strstr(filename, ".html"))
@@ -261,9 +264,12 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
     // p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     // fwrite(p, 1, sbuf.st_size, stream);
     // munmap(p, sbuf.st_size);
+
+    int fd;
+    char *p;
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
-    fprintf(stderr, "%s", filename);
+    
 
     p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
     // fwrite(p, 1, sbuf.st_size, stream);
@@ -306,7 +312,7 @@ void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno)
         error("ERROR on binding");
 }
 
-void *thread_function(void *arg)
+void *thread_function()
 {
     while (true)
     {
@@ -348,12 +354,12 @@ void *handle_connection(void *p_client_socket)
     char filename[BUFSIZE]; /* path derived from url */
     char filetype[BUFSIZE]; /* path derived from url */
     char cgiargs[BUFSIZE];  /* cgi argument list */
-    char *p;                /* temporary pointer */
+    // char *p;                /* temporary pointer */
     int is_static;          /* static request? */
     struct stat sbuf;       /* file status */
-    int fd;                 /* static content filedes */
-    int pid;                /* process id from fork */
-    int wait_status;        /* status from wait */
+    // int fd;                 /* static content filedes */
+    // int pid;                /* process id from fork */
+    // int wait_status;        /* status from wait */
     int choice = 0;
     int childfd = *((int *)p_client_socket);
     /* open the child socket descriptor as a stream */
@@ -375,7 +381,7 @@ void *handle_connection(void *p_client_socket)
 
         if (strcasecmp(method, "HEAD"))
         {
-            get_error_check(childfd, stream, method);
+            get_error_check(childfd, stream);
             close(childfd);
             fprintf(stderr, "closing connection\n");
             return NULL;
@@ -390,7 +396,7 @@ void *handle_connection(void *p_client_socket)
     while (strcmp(buf, "\r\n"))
     {
         fgets(buf, BUFSIZE, stream);
-        printf("%s", buf);
+        // printf("%s", buf);
     }
 
     /* parse the url (/filename.html)] */
@@ -404,18 +410,18 @@ void *handle_connection(void *p_client_socket)
     /* make sure the file exists */
     if (stat(filename, &sbuf) < 0)
     {
-        cerror(childfd, stream, filename, errorfile);
+        cerror(childfd, stream, errorfile);
         fclose(stream);
         close(childfd);
-        fprintf(stderr, "closing connection\n");
+        fprintf(stderr, "\n*****closing connection*****\n");
         return NULL;
     }
 
     /* Display content */
     if (is_static && choice == 0)
     {
-        printf("\nGet method: \n");
-        display_content(childfd, stream, fd, p, filename, filetype, sbuf);
+        printf("\nGet method\n");
+        display_content(childfd, stream, filename, filetype, sbuf);
     }
     else
     {
@@ -439,6 +445,6 @@ void *handle_connection(void *p_client_socket)
     /* clean up */
     fclose(stream);
     close(childfd);
-    fprintf(stderr, "closing connection\n");
+    fprintf(stderr, "\n*****closing connection*****\n");
     return NULL;
 }

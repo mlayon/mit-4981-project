@@ -1,5 +1,5 @@
 // How to run:
-// gcc -std=c11 -Wall -Werror -pedantic -o server-config.c config.c
+// gcc -std=c11 -Wall -Werror -pedantic -o server-config server-config.c config.c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +15,8 @@
 // /etc/services
 #define PORT 49157
 
+void start_gui(void);
+
 int main(int argc, const char * argv[])
 {
     // Setting these to void to silence warnings.
@@ -24,18 +26,20 @@ int main(int argc, const char * argv[])
     Config conf;
     struct sockaddr_in addr;
     int sfd;
-    int status; // get_config status
+    int parse_status; // get_config status
 
-    // Testing get_config functions
-    // If file name provided, use get_config_file func with file name parameter
-    if (argc > 1) {
-        status = get_config_file(&conf, argv[1]);
+    // If args given, check flags
+    if (argc >= 2) {
+        // If appropriate flag is given, start gui
+        if (strcmp(argv[1], "--c") == 0) {
+            start_gui();
+        }
     }
-    else {
-        status = get_config_defaults(&conf);
-    }
+    
 
-    if(status == 0) {
+    parse_status = get_config_file(&conf);
+
+    if(parse_status == 0) {
         perror("ERROR while parsing configuration file");
         return 0;
     }
@@ -45,8 +49,6 @@ int main(int argc, const char * argv[])
         perror("cannot create socket");
         return 0;
     } 
-    printf("port: %d\n", conf.port);
-    printf("subprocess: %c\n", conf.subprocess);
 
 
     memset(&addr, 0, sizeof(struct sockaddr_in));
@@ -54,6 +56,7 @@ int main(int argc, const char * argv[])
     // addr.sin_port = htons(PORT);
     addr.sin_port = htons(conf.port);
     addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    free_space(&conf);
 
     // dc_bind(sfd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
     if (bind(sfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
@@ -94,3 +97,16 @@ int main(int argc, const char * argv[])
 }
 
 
+// Creates child process and runs the gui program over it
+void start_gui(void) {
+    /*Spawn a child to run the program.*/
+    pid_t pid=fork();
+    if (pid==0) { /* child process */
+        execv("gui", NULL);
+        exit(127); /* only if execv fails */
+    }
+    else { /* pid!=0; parent process */
+        waitpid(pid,0,0); /* wait for child to exit */
+    }
+    
+}

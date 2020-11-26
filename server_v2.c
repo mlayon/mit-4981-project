@@ -1,7 +1,7 @@
 /* 
 HTTP server that serves static and
  *          dynamic content with the GET method.
- *          usage: server port num
+ *          usage: ./server or ./server --gui
  */
 
 #include <stdio.h>
@@ -21,6 +21,7 @@ HTTP server that serves static and
 #include <stdint.h>
 #include <stdbool.h>
 // #include "pthreadpool.h"
+#include "config.h"
 
 #define BUFSIZE 1024
 #define MAXERRS 16
@@ -75,10 +76,11 @@ int *dequeue()
 }
 
 //CONFIG INFORMATION
-char *errorfile = "404.html";
+char *errorfile;
 //char *html_root = "./docs/docs2";
 //default root
-char *html_root = ".";
+char *html_root;
+// Config conf;
 //To test HEAD request: wget -S --spider http://localhost:8000/tester.html
 //or curl -I http://localhost:8000/tester.html
 void error(char *msg);
@@ -90,6 +92,8 @@ void get_error_check(int childfd, FILE *stream);
 void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno);
 void *handle_connection(void *p_client_socket);
 void *thread_function();
+void start_gui(void);
+
 int main(int argc, char **argv)
 {
 
@@ -103,14 +107,33 @@ int main(int argc, char **argv)
     int optval;                    /* flag value for setsockopt */
     struct sockaddr_in serveraddr; /* server address */
     struct sockaddr_in clientaddr; /* client address */
+    Config conf;
+    int parse_status;
+    char subprocess;
 
     // command lines
-    if (argc != 2)
-    {
-        fprintf(stderr, "usage: %s <port>\n", argv[0]);
+    if (argc == 2) {
+        // If appropriate flag is given, start gui
+        if (strcmp(argv[1], "--gui") == 0) {
+            start_gui();
+        }
+    
+    // can't have more than 2 args
+    } else if (argc > 2) {
+        fprintf(stderr, "usage: %s or %s --gui\n", argv[0], argv[0]);
         exit(1);
     }
-    portno = atoi(argv[1]);
+    
+    // Parse through config file
+    if((parse_status = get_config_file(&conf)) == 0) {
+        perror("ERROR while parsing configuration file");
+        return 0;
+    }
+    portno = conf.port;
+    subprocess = conf.subprocess;
+    html_root = conf.root;
+    errorfile = conf.error;
+    
     //first off create a bunch of threads to handle future connections.
     for (int i = 0; i < THREAD_POOL_SIZE; i++)
     {
@@ -447,4 +470,18 @@ void *handle_connection(void *p_client_socket)
     close(childfd);
     fprintf(stderr, "\n*****closing connection*****\n");
     return NULL;
+}
+
+// Creates child process and runs the gui program over it
+void start_gui(void) {
+    /*Spawn a child to run the program.*/
+    pid_t pid=fork();
+    if (pid==0) { /* child process */
+        execv("gui", NULL);
+        exit(127); /* only if execv fails */
+    }
+    else { /* pid!=0; parent process */
+        waitpid(pid,0,0); /* wait for child to exit */
+    }
+    
 }

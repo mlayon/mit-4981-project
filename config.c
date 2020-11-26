@@ -1,29 +1,35 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "config.h"
 
 // Gets server configuration from a .config file
 int get_config_file(Config *conf) {
 
     FILE *file;
-    char line[128];
+    char *line = NULL;
+    size_t len = 0;
+    ssize_t read;
     char *key;
     char *value;
-    char *delimiter = "=";
+    // char *delimiter = "=";
     
     // Opening file pointer
     file = fopen("config.conf", "r");
     if (file != NULL) {
 
         // reading through file
-        while(fgets(line, sizeof(line), file) != NULL) {
+        while ((read = getline(&line, &len, file)) != -1) {
             // printf("before key: %s", key);
-            key = strtok(line, delimiter); // grab the token before the '=' sign
+            // key = strtok(line, delimiter); // grab the token before the '=' sign
             // printf("after key: %s\n", key);
             // printf("before value: %s", value);
-            value = strtok(NULL, delimiter); // grab the token after the '=' sign
+            // value = strtok(NULL, delimiter); // grab the token after the '=' sign
             // printf("after value: %s\n", value);
+            if (parse_line(line, &key, &value))
+                continue;
+
             if (strcmp(key, "port") == 0) {
                 conf->port = atoi(value);
 
@@ -32,11 +38,13 @@ int get_config_file(Config *conf) {
 
             } else if (strcmp(key, "root") == 0) {
                 conf->root = malloc(strlen(value) + 1);
-                strcpy(conf->root, value);
+                strcpy(conf->root, value);  
+                // conf->root = value;
 
             } else if (strcmp(key, "error") == 0) {
                 conf->error = malloc(strlen(value) + 1);
                 strcpy(conf->error, value);
+                // conf->error = value;
             }
         }
         fclose(file);
@@ -62,4 +70,32 @@ int get_config_defaults(Config *conf) {
 void free_space(Config *conf) {
     free(conf->root);
     free(conf->error);
+}
+
+// Trims spaces 
+char *trim(char *str) {
+    char *start = str;
+    char *end = str + strlen(str);
+
+    while(*start && isspace(*start))
+        start++;
+
+    while(end > start && isspace(*(end - 1)))
+        end--;
+
+    *end = '\0';
+    return start;
+}
+
+// Parse through line and look for key-value pair
+int parse_line(char *line, char **key, char **value) {
+    char *ptr = strchr(line, '=');
+    if (ptr == NULL)
+        return -1;
+
+    *ptr++ = '\0';
+    *key = trim(line);
+    *value = trim(ptr);
+
+    return 0;
 }

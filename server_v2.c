@@ -120,7 +120,7 @@ int main(int argc, char **argv)
     
     // can't have more than 2 args
     } else if (argc > 2) {
-        fprintf(stderr, "usage: %s or %s --gui\n", argv[0]);
+        fprintf(stderr, "usage: %s or %s --gui\n", argv[0], argv[0]);
         exit(1);
     }
     

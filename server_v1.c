@@ -68,12 +68,12 @@ int main(int argc, char **argv)
     int choice = 0;
 
     // command lines
-    if (argc != 2)
+    if (argc != 3)
     {
-        fprintf(stderr, "usage: %s <port>\n", argv[0]);
+        fprintf(stderr, "usage: -p %s <port>\n", argv[0]);
         exit(1);
     }
-    portno = atoi(argv[1]);
+    portno = atoi(argv[2]);
 
     /* open socket descriptor */
     parentfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -123,16 +123,14 @@ int main(int argc, char **argv)
         fgets(buf, BUFSIZE, stream);
 
         //Request line head! "GET /filename.html";
-        printf("%s", buf);
+        printf("Req :%s", buf);
 
         sscanf(buf, "%s %s %s\n", method, uri, version);
 
-        //compare GET METHOD
-        //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
         if (strcmp(method, "GET"))
         {
 
-            if (strcasecmp(method, "HEAD"))
+            if (strcasecmp(method, "POST"))
             {
                 get_error_check(stream, method);
                 close(childfd);
@@ -160,6 +158,7 @@ int main(int argc, char **argv)
         }
 
         /* make sure the file exists */
+
         if (stat(filename, &sbuf) < 0)
         {
             cerror(stream, filename, errorfile);
@@ -176,21 +175,9 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nHead method: \n");
-         //   int sizeHead = get_file_size(filename);
-         //   printf("HEAD size of file:%d ", sizeHead);
-            if (strstr(filename, ".html"))
-                strcpy(filetype, "text/html");
-
-            else
-                strcpy(filetype, "text/plain");
-
-            /* print response header */
-            fprintf(stream, "HTTP/1.1 200 OK\n");
-            fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-            fprintf(stream, "Content-type: %s\n", filetype);
-            fprintf(stream, "\r\n");
-            fflush(stream);
+            printf("\nPOST method: \n");
+           // printf("sbuf? %s" , sbuf.st_mode);
+            display_content2(stream, fd, p, filename, filetype, sbuf);
         }
 
         /* clean up */
@@ -260,6 +247,7 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     /* print response header */
     fprintf(stream, "HTTP/1.1 200 OK\n");
     fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+    printf("thing %d",(int)sbuf.st_size );
     fprintf(stream, "Content-type: %s\n", filetype);
     fprintf(stream, "\r\n");
     fflush(stream);
@@ -271,12 +259,42 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     munmap(p, sbuf.st_size);
 }
 
+void display_content2(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
+
+{
+    //curl --data "param1=value1&param2=value2"  http://localhost:8000/tester.html
+    if (strstr(filename, ".html"))
+        strcpy(filetype, "text/html");
+
+    else
+        strcpy(filetype, "text/plain");
+    printf("P: %s", p);
+    /* print response header */
+    fprintf(stream, "HTTP/1.1 200 OK\n");
+    fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+
+    fprintf(stream, "Content-type: %s\n", filetype);
+    printf("File name: %s", filename);
+    fprintf(stream, "\r\n");
+    fflush(stream);
+
+    /* Use mmap to return arbitrary-sized response body */ //query_string
+
+    fd = open(filename, O_RDONLY);
+    p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    //printf("content %s", p);
+    fwrite(p, 1, sbuf.st_size, stream);
+    munmap(p, sbuf.st_size);
+}
+
+
 void parse_url(char filename[], char uri[], char cgiargs[])
 {
     strcpy(cgiargs, "");
     strcpy(filename, html_root);
     strcat(filename, uri);
     //  printf("Uri: %s", uri); // this is the url
+    //Default html
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
 }

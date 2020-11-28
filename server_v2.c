@@ -110,6 +110,7 @@ int main(int argc, char **argv)
     Config conf;
     int parse_status;
     char subprocess;
+    int pid;                /* process id from fork */
 
     // command lines
     if (argc == 2) {
@@ -133,6 +134,7 @@ int main(int argc, char **argv)
     subprocess = conf.subprocess;
     html_root = conf.root;
     errorfile = conf.error;
+    // printf("%c", subprocess);
     
     //first off create a bunch of threads to handle future connections.
     for (int i = 0; i < THREAD_POOL_SIZE; i++)
@@ -163,35 +165,72 @@ int main(int argc, char **argv)
     clientlen = sizeof(clientaddr);
     
     int i = 0;
-    while (true)
-    {
-        //parent process waiting to accept a new connection
-        /* wait for a connection request */
-        childfd = accept(parentfd, (struct sockaddr *)&clientaddr, &clientlen);
-        if (childfd < 0)
-            error("ERROR on accept");
+    // if we're 
+    if (subprocess == 't') {
+        while (true)
+        {
+            //parent process waiting to accept a new connection
+            /* wait for a connection request */
+            childfd = accept(parentfd, (struct sockaddr *)&clientaddr, &clientlen);
+            if (childfd < 0)
+                error("ERROR on accept");
 
-        /* determine who sent the message */
-        //     hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
-        //                           sizeof(clientaddr.sin_addr.s_addr), AF_INET);
-        hostp = gethostbyname("127.0.0.1");
-        if (hostp == NULL)
-            error("ERROR on gethostbyaddr");
-        hostaddrp = inet_ntoa(clientaddr.sin_addr);
-        if (hostaddrp == NULL)
-            error("ERROR on inet_ntoa\n");
+            /* determine who sent the message */
+            //     hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
+            //                           sizeof(clientaddr.sin_addr.s_addr), AF_INET);
+            hostp = gethostbyname("127.0.0.1");
+            if (hostp == NULL)
+                error("ERROR on gethostbyaddr");
+            hostaddrp = inet_ntoa(clientaddr.sin_addr);
+            if (hostaddrp == NULL)
+                error("ERROR on inet_ntoa\n");
 
-        i++;
+            i++;
 
-        int *pclient = malloc(sizeof(int));
-        *pclient = childfd;
+            int *pclient = malloc(sizeof(int));
+            *pclient = childfd;
 
-        //make sure only one thread messes with the queue at a time
-        pthread_mutex_lock(&mutex);
-        enqueue(pclient);
-        pthread_cond_signal(&condition_var);
-        pthread_mutex_unlock(&mutex);
+            //make sure only one thread messes with the queue at a time
+            pthread_mutex_lock(&mutex);
+            enqueue(pclient);
+            pthread_cond_signal(&condition_var);
+            pthread_mutex_unlock(&mutex);
+        }
+    } else if (subprocess == 'p') {
+        // printf("hey you're using processes!\n");
+        while (true)
+        {
+            //parent process waiting to accept a new connection
+            /* wait for a connection request */
+            childfd = accept(parentfd, (struct sockaddr *)&clientaddr, &clientlen);
+            if (childfd < 0)
+                error("ERROR on accept");
+            
+            pid = fork();
+            // handle connection if we're on the child process
+            if (pid == 0) {
+                // printf("child process created\n");
+
+                while (true) {
+                    hostp = gethostbyname("127.0.0.1");
+                    if (hostp == NULL)
+                        error("ERROR on gethostbyaddr");
+
+                    hostaddrp = inet_ntoa(clientaddr.sin_addr);
+                    if (hostaddrp == NULL)
+                        error("ERROR on inet_ntoa\n");
+
+                    handle_connection(&childfd);
+                    break;
+                }
+
+            } else {
+                close(childfd);
+                continue;
+            }
+        }
     }
+
     return 0;
 }
 

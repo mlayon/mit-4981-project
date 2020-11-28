@@ -85,7 +85,7 @@ char *html_root;
 //or curl -I http://localhost:8000/tester.html
 void error(char *msg);
 void parse_url(char filename[], char uri[], char cgiargs[]);
-void display_content(int childfd, FILE *stream, char filename[], char filetype[], struct stat sbuf);
+void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
 void cerror(int childfd, FILE *stream, char *errorfile);
 size_t get_file_size(const char *filename);
 void get_error_check(int childfd, FILE *stream);
@@ -96,7 +96,9 @@ void start_gui(void);
 
 int main(int argc, char **argv)
 {
-
+    char *p;                /* temporary pointer */
+    
+    int fd;                 /* static content filedes */
     /* variables for connection management */
     int parentfd;                  /* parent socket */
     int childfd;                   /* child socket */
@@ -305,7 +307,7 @@ void get_error_check(int childfd, FILE *stream)
     fclose(stream);
 }
 
-void display_content(int childfd, FILE *stream, char filename[], char filetype[], struct stat sbuf)
+void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
 
 {
     if (strstr(filename, ".html"))
@@ -327,8 +329,7 @@ void display_content(int childfd, FILE *stream, char filename[], char filetype[]
     // fwrite(p, 1, sbuf.st_size, stream);
     // munmap(p, sbuf.st_size);
 
-    int fd;
-    char *p;
+   
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
     
@@ -416,10 +417,10 @@ void *handle_connection(void *p_client_socket)
     char filename[BUFSIZE]; /* path derived from url */
     char filetype[BUFSIZE]; /* path derived from url */
     char cgiargs[BUFSIZE];  /* cgi argument list */
-    // char *p;                /* temporary pointer */
+    char *p;                /* temporary pointer */
     int is_static;          /* static request? */
     struct stat sbuf;       /* file status */
-    // int fd;                 /* static content filedes */
+    int fd;                 /* static content filedes */
     // int pid;                /* process id from fork */
     // int wait_status;        /* status from wait */
     int choice = 0;
@@ -436,6 +437,7 @@ void *handle_connection(void *p_client_socket)
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
+    
     //compare GET METHOD
     //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
     if (strcmp(method, "GET"))
@@ -458,7 +460,7 @@ void *handle_connection(void *p_client_socket)
     while (strcmp(buf, "\r\n"))
     {
         fgets(buf, BUFSIZE, stream);
-        // printf("%s", buf);
+        printf("%s", buf);
     }
 
     /* parse the url (/filename.html)] */
@@ -483,7 +485,7 @@ void *handle_connection(void *p_client_socket)
     if (is_static && choice == 0)
     {
         printf("\nGet method\n");
-        display_content(childfd, stream, filename, filetype, sbuf);
+        display_content(childfd, stream, fd, p, filename, filetype, sbuf);
     }
     else
     {

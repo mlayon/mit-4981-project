@@ -238,7 +238,7 @@ void cerror(FILE *stream, char *cause, char *errorfile)
     /* Use mmap to return arbitrary-sized response body */
     int fd = open(errorfile, O_RDONLY);
     char *p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
-    fwrite(p, 1, size404, stream);
+    // fwrite(p, 1, size404, stream);
     munmap(p, size404);
 }
 
@@ -267,7 +267,7 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
     p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    fwrite(p, 1, sbuf.st_size, stream);
+    // fwrite(p, 1, sbuf.st_size, stream);
     munmap(p, sbuf.st_size);
 }
 

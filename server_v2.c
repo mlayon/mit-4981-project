@@ -374,21 +374,26 @@ void *handle_connection(void *p_client_socket)
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
-    //compare GET METHOD
-    //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
-    if (strcmp(method, "GET"))
+ //compare
+    // 0 means they're requivalent
+    if (strcmp(method, "GET") == 0)
     {
-
-        if (strcasecmp(method, "HEAD"))
-        {
-            get_error_check(childfd, stream);
-            close(childfd);
-            fprintf(stderr, "closing connection\n");
-            return NULL;
-        }
-
-        //  printf("choice = 1 this");
+        choice = 0;
+    }
+    else if (strcmp(method, "HEAD") == 0)
+    {
         choice = 1;
+    }
+    else if (strcmp(method, "POST") == 0)
+    {
+        choice = 2;
+    }
+    else
+    {
+        get_error_check(childfd, stream);
+        close(childfd);
+        fprintf(stderr, "closing connection\n");
+        return NULL;
     }
 
     /* read (and ignore) the HTTP headers */
@@ -396,7 +401,7 @@ void *handle_connection(void *p_client_socket)
     while (strcmp(buf, "\r\n"))
     {
         fgets(buf, BUFSIZE, stream);
-        // printf("%s", buf);
+        printf("%s", buf);
     }
 
     /* parse the url (/filename.html)] */
@@ -423,11 +428,25 @@ void *handle_connection(void *p_client_socket)
         printf("\nGet method\n");
         display_content(childfd, stream, filename, filetype, sbuf);
     }
-    else
+    else if(choice ==1)
     {
         printf("\nHead method: \n");
-        //   int sizeHead = get_file_size(filename);
-        //   printf("HEAD size of file:%d ", sizeHead);
+
+        if (strstr(filename, ".html"))
+            strcpy(filetype, "text/html");
+
+        else
+            strcpy(filetype, "text/plain");
+
+        /* print response header */
+        fprintf(stream, "HTTP/1.1 200 OK\n");
+        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+        fprintf(stream, "Content-type: %s\n", filetype);
+        fprintf(stream, "\r\n");
+        fflush(stream);
+    }else{
+                printf("\nPOST method: \n");
+
         if (strstr(filename, ".html"))
             strcpy(filetype, "text/html");
 

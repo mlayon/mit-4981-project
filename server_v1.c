@@ -26,8 +26,8 @@ char *errorfile = "404.html";
 //char *html_root = "./docs/docs2";
 //default root
 char *html_root = ".";
-//To test HEAD request: wget -S --spider http://localhost:8000/tester.html 
-//or curl -I http://localhost:8000/tester.html 
+//To test HEAD request: wget -S --spider http://localhost:8000/tester.html
+//or curl -I http://localhost:8000/tester.html
 
 void parse_url(char filename[], char uri[], char cgiargs[]);
 void display_content(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
@@ -175,9 +175,31 @@ int main(int argc, char **argv)
         }
         else
         {
-            printf("\nPOST method: \n");
-           // printf("sbuf? %s" , sbuf.st_mode);
-            display_content2(stream, fd, p, filename, filetype, sbuf);
+            printf("\nPOST! method: \n");
+            if (strstr(filename, ".html"))
+                strcpy(filetype, "text/html");
+
+            else
+            strcpy(filetype, "text/plain");
+            /* print response header */
+            fprintf(stream, "HTTP/1.1 200 OK\n");
+            fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+
+            fprintf(stream, "Content-type: %s\n", filetype);
+            fprintf(stream, "\r\n");
+            fflush(stream);
+
+            /* Use mmap to return arbitrary-sized response body */ //query_string
+
+            fd = open(filename, O_RDONLY);
+            p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+             while (strcmp(buf, "\r\n"))
+        {
+            fgets(buf, BUFSIZE, stream);
+            printf("%s", buf);
+        }
+            fwrite(p, 1, sbuf.st_size, stream);
+  
         }
 
         /* clean up */
@@ -247,7 +269,7 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     /* print response header */
     fprintf(stream, "HTTP/1.1 200 OK\n");
     fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-    printf("thing %d",(int)sbuf.st_size );
+    printf("thing %d", (int)sbuf.st_size);
     fprintf(stream, "Content-type: %s\n", filetype);
     fprintf(stream, "\r\n");
     fflush(stream);
@@ -258,35 +280,6 @@ void display_content(FILE *stream, int fd, char *p, char filename[], char filety
     fwrite(p, 1, sbuf.st_size, stream);
     munmap(p, sbuf.st_size);
 }
-
-void display_content2(FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
-
-{
-    //curl --data "param1=value1&param2=value2"  http://localhost:8000/tester.html
-    if (strstr(filename, ".html"))
-        strcpy(filetype, "text/html");
-
-    else
-        strcpy(filetype, "text/plain");
-    printf("P: %s", p);
-    /* print response header */
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-
-    fprintf(stream, "Content-type: %s\n", filetype);
-    printf("File name: %s", filename);
-    fprintf(stream, "\r\n");
-    fflush(stream);
-
-    /* Use mmap to return arbitrary-sized response body */ //query_string
-
-    fd = open(filename, O_RDONLY);
-    p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    //printf("content %s", p);
-    fwrite(p, 1, sbuf.st_size, stream);
-    munmap(p, sbuf.st_size);
-}
-
 
 void parse_url(char filename[], char uri[], char cgiargs[])
 {

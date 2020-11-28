@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 #define FIELD_COUNT 4
-
+size_t strnlen(const char *s, size_t maxlen);
 static FORM *form;
 static FIELD *field[9];
 static WINDOW *win_body, *win_form;

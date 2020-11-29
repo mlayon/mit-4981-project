@@ -358,6 +358,7 @@ void parse_url(char filename[], char uri[], char cgiargs[])
     strcpy(cgiargs, "");
     strcpy(filename, html_root);
     strcat(filename, uri);
+
     //  printf("Uri: %s", uri); // this is the url
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
@@ -425,6 +426,9 @@ void *handle_connection(void *p_client_socket)
     // int wait_status;        /* status from wait */
     int choice = 0;
     int childfd = *((int *)p_client_socket);
+    char c1[BUFSIZE];  
+    char content_len2[BUFSIZE];  
+    char content_len4[BUFSIZE];  
     /* open the child socket descriptor as a stream */
     if ((stream = fdopen(childfd, "r+")) == NULL)
         error("ERROR on fdopen");
@@ -437,31 +441,53 @@ void *handle_connection(void *p_client_socket)
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
+<<<<<<< HEAD
     
     //compare GET METHOD
     //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
     if (strcmp(method, "GET"))
+=======
+   
+ //compare
+    // 0 means they're requivalent
+    if (strcmp(method, "GET") == 0)
     {
-
-        if (strcasecmp(method, "HEAD"))
-        {
-            get_error_check(childfd, stream);
-            close(childfd);
-            fprintf(stderr, "closing connection\n");
-            return NULL;
-        }
-
-        //  printf("choice = 1 this");
+        choice = 0;
+    }
+    else if (strcmp(method, "HEAD") == 0)
+>>>>>>> bonus_post
+    {
         choice = 1;
+    }
+    else if (strcmp(method, "POST") == 0)
+    {
+        choice = 2;
+    }
+    else
+    {
+        get_error_check(childfd, stream);
+        close(childfd);
+        fprintf(stderr, "closing connection\n");
+        return NULL;
     }
 
     /* read (and ignore) the HTTP headers */
     fgets(buf, BUFSIZE, stream);
+    int count = 0;
     while (strcmp(buf, "\r\n"))
-    {
+    { 
         fgets(buf, BUFSIZE, stream);
         printf("%s", buf);
+<<<<<<< HEAD
+=======
+          if(count == 2){
+         sscanf(buf, "%s %s\n", c1, content_len2);
+          }
+          count++;
+           sscanf(buf, "%s %s\n", c1, content_len4);
+>>>>>>> bonus_post
     }
+
 
     /* parse the url (/filename.html)] */
     if (!strstr(uri, "cgi-bin"))
@@ -469,6 +495,7 @@ void *handle_connection(void *p_client_socket)
         is_static = 1;
 
         parse_url(filename, uri, cgiargs);
+
     }
 
     /* make sure the file exists */
@@ -487,11 +514,10 @@ void *handle_connection(void *p_client_socket)
         printf("\nGet method\n");
         display_content(childfd, stream, fd, p, filename, filetype, sbuf);
     }
-    else
+    else if(choice ==1)
     {
         printf("\nHead method: \n");
-        //   int sizeHead = get_file_size(filename);
-        //   printf("HEAD size of file:%d ", sizeHead);
+
         if (strstr(filename, ".html"))
             strcpy(filetype, "text/html");
 
@@ -500,12 +526,31 @@ void *handle_connection(void *p_client_socket)
 
         /* print response header */
         fprintf(stream, "HTTP/1.1 200 OK\n");
+        fprintf(stream, "Content-type: %s\n", filetype);
         fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+        fprintf(stream, "\r\n");
+        fflush(stream);
+    }else{
+
+        int len = atoi(content_len2) + 1; // curl
+
+        if(len == 1){ // wget
+           len = atoi(content_len4);
+        }
+       // printf("\nNum %d", len);
+        fgets(buf,len, stream);
+        printf("POSTed data %s", buf);
+        printf("\nPOST method: \n");
+
+        /* print response header */
+        fprintf(stream, "HTTP/1.1 200 OK\n");
+        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size );
         fprintf(stream, "Content-type: %s\n", filetype);
         fprintf(stream, "\r\n");
         fflush(stream);
+        char * str = buf;
+        send(childfd, str, strlen(str), 0);
     }
-
     /* clean up */
     fclose(stream);
     close(childfd);

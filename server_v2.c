@@ -404,6 +404,7 @@ void *handle_connection(void *p_client_socket)
         printf("%s", buf);
     }
 
+    // int len = strlen(buf);
     /* parse the url (/filename.html)] */
     if (!strstr(uri, "cgi-bin"))
     { /* static content */
@@ -445,22 +446,22 @@ void *handle_connection(void *p_client_socket)
         fprintf(stream, "\r\n");
         fflush(stream);
     }else{
-                printf("\nPOST method: \n");
-
-        if (strstr(filename, ".html"))
-            strcpy(filetype, "text/html");
-
-        else
-            strcpy(filetype, "text/plain");
+        //fgets(buf,BUFSIZE, stream);
+        //Need exact length + 1 null byte, otherwise the buffer waits for stream for more data
+        int len = 28;
+        fgets(buf,len, stream);
+        printf("POSTed data %s", buf);
+        printf("\nPOST method: \n");
 
         /* print response header */
         fprintf(stream, "HTTP/1.1 200 OK\n");
-        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
+        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size );
         fprintf(stream, "Content-type: %s\n", filetype);
         fprintf(stream, "\r\n");
         fflush(stream);
+        char * str = buf;
+        send(childfd, str, strlen(str), 0);
     }
-
     /* clean up */
     fclose(stream);
     close(childfd);

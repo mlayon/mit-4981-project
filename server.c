@@ -44,10 +44,7 @@ void *thread_function();
 void start_gui(void);
 
 int main(int argc, char **argv)
-{
-    char *p;                /* temporary pointer */
-    
-    int fd;                 /* static content filedes */
+{    
     /* variables for connection management */
     int parentfd;                  /* parent socket */
     int childfd;                   /* child socket */
@@ -56,8 +53,8 @@ int main(int argc, char **argv)
     struct hostent *hostp;         /* client host info */
     char *hostaddrp;               /* dotted decimal host addr string */
     int optval;                    /* flag value for setsockopt */
-    struct sockaddr_in serveraddr; /* server address */
-    struct sockaddr_in clientaddr; /* client address */
+    struct sockaddr_in serveraddr = {0}; /* server address */
+    struct sockaddr_in clientaddr = {0}; /* client address */
     Config conf;
     int parse_status;
     char subprocess;
@@ -221,10 +218,10 @@ void *handle_connection(void *p_client_socket)
     char filename[BUFSIZE]; /* path derived from url */
     char filetype[BUFSIZE]; /* path derived from url */
     char cgiargs[BUFSIZE];  /* cgi argument list */
-    char *p;                /* temporary pointer */
+    char *p = NULL;                /* temporary pointer */
     int is_static;          /* static request? */
     struct stat sbuf;       /* file status */
-    int fd;                 /* static content filedes */
+    int fd = 0;                 /* static content filedes */
     int choice = 0;
     int childfd = *((int *)p_client_socket);
     char c1[BUFSIZE];  

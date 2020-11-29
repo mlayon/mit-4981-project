@@ -295,6 +295,7 @@ void parse_url(char filename[], char uri[], char cgiargs[])
     strcpy(cgiargs, "");
     strcpy(filename, html_root);
     strcat(filename, uri);
+
     //  printf("Uri: %s", uri); // this is the url
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
@@ -362,6 +363,9 @@ void *handle_connection(void *p_client_socket)
     // int wait_status;        /* status from wait */
     int choice = 0;
     int childfd = *((int *)p_client_socket);
+    char c1[BUFSIZE];  
+    char content_len2[BUFSIZE];  
+    char content_len4[BUFSIZE];  
     /* open the child socket descriptor as a stream */
     if ((stream = fdopen(childfd, "r+")) == NULL)
         error("ERROR on fdopen");
@@ -374,6 +378,7 @@ void *handle_connection(void *p_client_socket)
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
+   
  //compare
     // 0 means they're requivalent
     if (strcmp(method, "GET") == 0)
@@ -398,19 +403,26 @@ void *handle_connection(void *p_client_socket)
 
     /* read (and ignore) the HTTP headers */
     fgets(buf, BUFSIZE, stream);
+    int count = 0;
     while (strcmp(buf, "\r\n"))
-    {
+    { 
         fgets(buf, BUFSIZE, stream);
         printf("%s", buf);
+          if(count == 2){
+         sscanf(buf, "%s %s\n", c1, content_len2);
+          }
+          count++;
+           sscanf(buf, "%s %s\n", c1, content_len4);
     }
 
-    // int len = strlen(buf);
+
     /* parse the url (/filename.html)] */
     if (!strstr(uri, "cgi-bin"))
     { /* static content */
         is_static = 1;
 
         parse_url(filename, uri, cgiargs);
+
     }
 
     /* make sure the file exists */
@@ -441,14 +453,18 @@ void *handle_connection(void *p_client_socket)
 
         /* print response header */
         fprintf(stream, "HTTP/1.1 200 OK\n");
-        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
         fprintf(stream, "Content-type: %s\n", filetype);
+        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
         fprintf(stream, "\r\n");
         fflush(stream);
     }else{
-        //fgets(buf,BUFSIZE, stream);
-        //Need exact length + 1 null byte, otherwise the buffer waits for stream for more data
-        int len = 28;
+
+        int len = atoi(content_len2) + 1; // curl
+
+        if(len == 1){ // wget
+           len = atoi(content_len4);
+        }
+       // printf("\nNum %d", len);
         fgets(buf,len, stream);
         printf("POSTed data %s", buf);
         printf("\nPOST method: \n");

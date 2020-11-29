@@ -26,6 +26,8 @@ HTTP server that serves static and
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
+#include "queue.c"
+#include "helper.c"
 
 #define BUFSIZE 1024
 #define MAXERRS 16
@@ -114,7 +116,7 @@ int main(int argc, char **argv)
     bind_port(parentfd, serveraddr, portno);
 
     /* getting ready to accept connection requests */
-    if (listen(parentfd, 5) < 0) /* allow 5 requests to queue up */
+    if (listen(parentfd, 10) < 0) /* allow 10 requests to queue up */
         error("ERROR on listen");
 
     /* 

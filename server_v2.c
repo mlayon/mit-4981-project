@@ -24,67 +24,20 @@ HTTP server that serves static and
 #include <stdbool.h>
 // #include "pthreadpool.h"
 #include "config.h"
+#include "queue.h"
 
 #define BUFSIZE 1024
 #define MAXERRS 16
-#define THREAD_POOL_SIZE 10
-struct node
-{
-    struct node *next;
-    int *client_socket;
-};
-typedef struct node node_t;
 
-node_t *head = NULL;
-node_t *tail = NULL;
 pthread_t thread_pool[THREAD_POOL_SIZE];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t condition_var = PTHREAD_COND_INITIALIZER;
-
-void enqueue(int *client_socket)
-{
-    node_t *newnode = malloc(sizeof(node_t));
-    newnode->client_socket = client_socket;
-    newnode->next = NULL;
-    if (tail == NULL)
-    {
-        head = newnode;
-    }
-    else
-    {
-        tail->next = newnode;
-    }
-    tail = newnode;
-}
-
-int *dequeue()
-{
-    if (head == NULL)
-    {
-        return NULL;
-    }
-    else
-    {
-        int *result = head->client_socket;
-        node_t *temp = head;
-        head = head->next;
-        if (head == NULL)
-        {
-            tail = NULL;
-        }
-        free(temp);
-        return result;
-    }
-}
 
 //CONFIG INFORMATION
 char *errorfile;
 //char *html_root = "./docs/docs2";
 //default root
 char *html_root;
-// Config conf;
-//To test HEAD request: wget -S --spider http://localhost:8000/tester.html
-//or curl -I http://localhost:8000/tester.html
 void error(char *msg);
 void parse_url(char filename[], char uri[], char cgiargs[]);
 void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);

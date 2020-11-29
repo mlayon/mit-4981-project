@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     /* variables for connection management */
     int parentfd;                  /* parent socket */
     int childfd;                   /* child socket */
-    int portno;                    /* port */
+    int portno = 0;                    /* port */
     socklen_t clientlen;                 /* byte size of client's address */
     struct hostent *hostp;         /* client host info */
     char *hostaddrp;               /* dotted decimal host addr string */
@@ -85,9 +85,11 @@ int main(int argc, char **argv)
 
     } 
 
-	if (portno == 0) {
+    // if port no is not assigned yet, use the one from config file
+	if (portno == 0) { 
 		portno = conf.port;
 	} 
+
     subprocess = conf.subprocess;
     html_root = conf.root;
     errorfile = conf.error;

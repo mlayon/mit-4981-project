@@ -1,7 +1,9 @@
 /* 
 HTTP server that serves static and
  *          dynamic content with the GET method.
- *          usage: ./server or ./server --gui
+ *          usage: ./server 
+ *              or ./server --gui 
+ *              or ./server -p <portno>
  */
 
 #include <stdio.h>
@@ -114,29 +116,36 @@ int main(int argc, char **argv)
     char subprocess;
     int pid;                /* process id from fork */
 
-    // command lines
-    if (argc == 2) {
-        // If appropriate flag is given, start gui
-        if (strcmp(argv[1], "--gui") == 0) {
-            start_gui();
-        }
-    
-    // can't have more than 2 args
-    } else if (argc > 2) {
-        fprintf(stderr, "usage: %s or %s --gui\n", argv[0], argv[0]);
-        exit(1);
-    }
-    
     // Parse through config file
     if((parse_status = get_config_file(&conf)) == 0) {
         perror("ERROR while parsing configuration file");
         return 0;
+
+    } else {
+        portno = conf.port;
+        subprocess = conf.subprocess;
+        html_root = conf.root;
+        errorfile = conf.error;
     }
-    portno = conf.port;
-    subprocess = conf.subprocess;
-    html_root = conf.root;
-    errorfile = conf.error;
-    // printf("%c", subprocess);
+
+    // command lines
+    if (argc == 2) {
+        // If appropriate flag is given, start gui
+        if (strcmp(argv[1], "-gui") == 0) {
+            start_gui();
+        }
+
+    // for ./server -p <portno>
+    } else if (argc == 3) {
+        if (strcmp(argv[1], "-p") == 0) {
+            portno = atoi(argv[2]);
+        }
+    } // can't have more than 3 args
+     else if (argc > 3) {
+        fprintf(stderr, "usage: %s or %s -gui or %s -p <portnumber>\n", argv[0], argv[0], argv[0]);
+        exit(1);
+    }
+    
     
     //first off create a bunch of threads to handle future connections.
     for (int i = 0; i < THREAD_POOL_SIZE; i++)
@@ -167,7 +176,7 @@ int main(int argc, char **argv)
     clientlen = sizeof(clientaddr);
     
     int i = 0;
-    // if we're 
+    // if we're using threads
     if (subprocess == 't') {
         while (true)
         {
@@ -199,7 +208,6 @@ int main(int argc, char **argv)
             pthread_mutex_unlock(&mutex);
         }
     } else if (subprocess == 'p') {
-        // printf("hey you're using processes!\n");
         while (true)
         {
             //parent process waiting to accept a new connection
@@ -211,7 +219,6 @@ int main(int argc, char **argv)
             pid = fork();
             // handle connection if we're on the child process
             if (pid == 0) {
-                // printf("child process created\n");
 
                 while (true) {
                     hostp = gethostbyname("127.0.0.1");
@@ -272,32 +279,16 @@ void cerror(int childfd, FILE *stream, char *errorfile)
     fprintf(stream, "\r\n");
     fflush(stream);
 
-    // /* Use mmap to return arbitrary-sized response body */
-    // int fd = open(errorfile, O_RDONLY);
-    // char *p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
-    // fwrite(p, 1, size404, stream);
-    // munmap(p, size404);
-
-    // fd = open(errorfile, O_RDONLY);
-    // fprintf(stderr, "%s", errorfile);
-
-    // p = mmap(0, size404, PROT_READ, MAP_PRIVATE, fd, 0);
-    // fwrite(p, 1, sbuf.st_size, stream);
-
-    // write(childfd, filename, sbuf.st_size);
-    // fprintf(stream1, "%s", filename);
     FILE *f = fopen(errorfile, "rb");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
-    // / same as rewind(f);/
 
     char *string = malloc(fsize + 1);
     fread(string, 1, fsize, f);
     fclose(f);
 
     send(childfd, string, size404, 0);
-    // munmap(p, size404);
    
 }
 
@@ -322,28 +313,16 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
     fprintf(stream, "Content-type: %s\n", filetype);
     fprintf(stream, "\r\n");
     fflush(stream);
-
-    // /* Use mmap to return arbitrary-sized response body */
-    // fd = open(filename, O_RDONLY);
-    // p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    // fwrite(p, 1, sbuf.st_size, stream);
-    // munmap(p, sbuf.st_size);
-
    
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
     
-
     p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    // fwrite(p, 1, sbuf.st_size, stream);
-
-    // write(childfd, filename, sbuf.st_size);
-    // fprintf(stream1, "%s", filename);
+  
     FILE *f = fopen(filename, "rb");
     fseek(f, 0, SEEK_END);
     long fsize = ftell(f);
     fseek(f, 0, SEEK_SET);
-    // / same as rewind(f);/
 
     char *string = malloc(fsize + 1);
     fread(string, 1, fsize, f);
@@ -359,7 +338,6 @@ void parse_url(char filename[], char uri[], char cgiargs[])
     strcpy(filename, html_root);
     strcat(filename, uri);
 
-    //  printf("Uri: %s", uri); // this is the url
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
 }
@@ -398,17 +376,6 @@ void *thread_function()
 void *handle_connection(void *p_client_socket)
 {
 
-    // /* variables for connection management */
-    // int parentfd;                  /* parent socket */
-    // int childfd;                   /* child socket */
-    // int portno;                    /* port */
-    // int clientlen;                 /* byte size of client's address */
-    // struct hostent *hostp;         /* client host info */
-    // char *hostaddrp;               /* dotted decimal host addr string */
-    // int optval;                    /* flag value for setsockopt */
-    // struct sockaddr_in serveraddr; /* server address */
-    // struct sockaddr_in clientaddr; /* client address */
-
     /* variables for connection I/O */
     FILE *stream;           /* stream version of childfd */
     char buf[BUFSIZE];      /* message buffer */
@@ -422,13 +389,12 @@ void *handle_connection(void *p_client_socket)
     int is_static;          /* static request? */
     struct stat sbuf;       /* file status */
     int fd;                 /* static content filedes */
-    // int pid;                /* process id from fork */
-    // int wait_status;        /* status from wait */
     int choice = 0;
     int childfd = *((int *)p_client_socket);
     char c1[BUFSIZE];  
     char content_len2[BUFSIZE];  
     char content_len4[BUFSIZE];  
+
     /* open the child socket descriptor as a stream */
     if ((stream = fdopen(childfd, "r+")) == NULL)
         error("ERROR on fdopen");
@@ -441,12 +407,6 @@ void *handle_connection(void *p_client_socket)
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
-<<<<<<< HEAD
-    
-    //compare GET METHOD
-    //  printf("COMPARE%s vs %i,", method, strcasecmp(method, "GET")); // 0 means they're requivalent
-    if (strcmp(method, "GET"))
-=======
    
  //compare
     // 0 means they're requivalent
@@ -455,7 +415,6 @@ void *handle_connection(void *p_client_socket)
         choice = 0;
     }
     else if (strcmp(method, "HEAD") == 0)
->>>>>>> bonus_post
     {
         choice = 1;
     }
@@ -478,14 +437,11 @@ void *handle_connection(void *p_client_socket)
     { 
         fgets(buf, BUFSIZE, stream);
         printf("%s", buf);
-<<<<<<< HEAD
-=======
           if(count == 2){
          sscanf(buf, "%s %s\n", c1, content_len2);
           }
           count++;
            sscanf(buf, "%s %s\n", c1, content_len4);
->>>>>>> bonus_post
     }
 
 

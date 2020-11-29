@@ -21,12 +21,6 @@ int get_config_file(Config *conf) {
 
         // reading through file
         while ((read = getline(&line, &len, file)) != -1) {
-            // printf("before key: %s", key);
-            // key = strtok(line, delimiter); // grab the token before the '=' sign
-            // printf("after key: %s\n", key);
-            // printf("before value: %s", value);
-            // value = strtok(NULL, delimiter); // grab the token after the '=' sign
-            // printf("after value: %s\n", value);
             if (parse_line(line, &key, &value))
                 continue;
 
@@ -39,12 +33,11 @@ int get_config_file(Config *conf) {
             } else if (strcmp(key, "root") == 0) {
                 conf->root = malloc(strlen(value) + 1);
                 strcpy(conf->root, value);  
-                // conf->root = value;
 
             } else if (strcmp(key, "error") == 0) {
                 conf->error = malloc(strlen(value) + 1);
                 strcpy(conf->error, value);
-                // conf->error = value;
+
             }
         }
         fclose(file);

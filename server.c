@@ -60,18 +60,6 @@ int main(int argc, char **argv)
     char subprocess;
     int pid;                /* process id from fork */
 
-    // Parse through config file
-    if((parse_status = get_config_file(&conf)) == 0) {
-        perror("ERROR while parsing configuration file");
-        return 0;
-
-    } else {
-        portno = conf.port;
-        subprocess = conf.subprocess;
-        html_root = conf.root;
-        errorfile = conf.error;
-    }
-
     // command lines
     if (argc == 2) {
         // If appropriate flag is given, start gui
@@ -89,6 +77,20 @@ int main(int argc, char **argv)
         fprintf(stderr, "usage: %s or %s -gui or %s -p <portnumber>\n", argv[0], argv[0], argv[0]);
         exit(1);
     }
+
+    // Parse through config file
+    if((parse_status = get_config_file(&conf)) == 0) {
+        perror("ERROR while parsing configuration file");
+        return 0;
+
+    } 
+
+	if (portno == 0) {
+		portno = conf.port;
+	} 
+    subprocess = conf.subprocess;
+    html_root = conf.root;
+    errorfile = conf.error;
     
     
     //first off create a bunch of threads to handle future connections.

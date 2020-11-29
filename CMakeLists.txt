@@ -3,7 +3,7 @@ project(darcyproj C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(server server_v2.c config.c)
+add_executable(server server.c config.c queue.c helper.c)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 

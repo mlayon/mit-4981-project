@@ -25,6 +25,7 @@ HTTP server that serves static and
 // #include "pthreadpool.h"
 #include "config.h"
 #include "queue.h"
+#include "helper.h"
 
 #define BUFSIZE 1024
 #define MAXERRS 16
@@ -38,13 +39,6 @@ char *errorfile;
 //char *html_root = "./docs/docs2";
 //default root
 char *html_root;
-void error(char *msg);
-void parse_url(char filename[], char uri[], char cgiargs[]);
-void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf);
-void cerror(int childfd, FILE *stream, char *errorfile);
-size_t get_file_size(const char *filename);
-void get_error_check(int childfd, FILE *stream);
-void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno);
 void *handle_connection(void *p_client_socket);
 void *thread_function();
 void start_gui(void);
@@ -196,117 +190,6 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/*
- * error - wrapper for perror used for bad syscalls
- */
-void error(char *msg)
-{
-    perror(msg);
-    exit(1);
-}
-
-/**
- * Get the size of a file.
- * @return The filesize, or 0 if the file does not exist.
- */
-size_t get_file_size(const char *filename)
-{
-    struct stat st;
-    if (stat(filename, &st) != 0)
-    {
-        return 0;
-    }
-    return st.st_size;
-}
-/*
- * cerror - returns an error message to the client
- */
-void cerror(int childfd, FILE *stream, char *errorfile)
-{
-
-    int size404 = get_file_size(errorfile);
-    /* print response header */
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Content-length: %d\n", size404);
-    fprintf(stream, "Content-type: text/html\n");
-    fprintf(stream, "\r\n");
-    fflush(stream);
-
-    FILE *f = fopen(errorfile, "rb");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *string = malloc(fsize + 1);
-    fread(string, 1, fsize, f);
-    fclose(f);
-
-    send(childfd, string, size404, 0);
-   
-}
-
-void get_error_check(int childfd, FILE *stream)
-{
-    cerror(childfd, stream, errorfile);
-    fclose(stream);
-}
-
-void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
-
-{
-    if (strstr(filename, ".html"))
-        strcpy(filetype, "text/html");
-
-    else
-        strcpy(filetype, "text/plain");
-
-    /* print response header */
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-    fprintf(stream, "Content-type: %s\n", filetype);
-    fprintf(stream, "\r\n");
-    fflush(stream);
-   
-    /* Use mmap to return arbitrary-sized response body */
-    fd = open(filename, O_RDONLY);
-    
-    p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-  
-    FILE *f = fopen(filename, "rb");
-    fseek(f, 0, SEEK_END);
-    long fsize = ftell(f);
-    fseek(f, 0, SEEK_SET);
-
-    char *string = malloc(fsize + 1);
-    fread(string, 1, fsize, f);
-    fclose(f);
-
-    send(childfd, string, sbuf.st_size, 0);
-    munmap(p, sbuf.st_size);
-}
-
-void parse_url(char filename[], char uri[], char cgiargs[])
-{
-    strcpy(cgiargs, "");
-    strcpy(filename, html_root);
-    strcat(filename, uri);
-
-    if (uri[strlen(uri) - 1] == '/')
-        strcat(filename, "index.html");
-}
-
-void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno)
-{
-
-    bzero((char *)&serveraddr, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    serveraddr.sin_port = htons((unsigned short)portno);
-    if (bind(parentfd, (struct sockaddr *)&serveraddr,
-             sizeof(serveraddr)) < 0)
-        error("ERROR on binding");
-}
-
 void *thread_function()
 {
     while (true)
@@ -377,7 +260,7 @@ void *handle_connection(void *p_client_socket)
     }
     else
     {
-        get_error_check(childfd, stream);
+        get_error_check(childfd, stream, errorfile);
         close(childfd);
         fprintf(stderr, "closing connection\n");
         return NULL;
@@ -403,7 +286,7 @@ void *handle_connection(void *p_client_socket)
     { /* static content */
         is_static = 1;
 
-        parse_url(filename, uri, cgiargs);
+        parse_url(filename, uri, cgiargs, html_root);
 
     }
 

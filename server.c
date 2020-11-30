@@ -26,8 +26,8 @@ HTTP server that serves static and
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-#include "queue.c"
-#include "helper.c"
+// #include "queue.c"
+// #include "helper.c"
 
 #define BUFSIZE 1024
 #define MAXERRS 16

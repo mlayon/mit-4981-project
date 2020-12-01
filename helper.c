@@ -55,7 +55,14 @@ void cerror(int childfd, FILE *stream, char *errorfile)
     send(childfd, string, size404, 0);
    
 }
-
+// Function to print out response header
+void print_response_header(FILE *stream,  char filetype[], struct stat sbuf){
+        fprintf(stream, "HTTP/1.1 200 OK\n");
+        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size );
+        fprintf(stream, "Content-type: %s\n", filetype);
+        fprintf(stream, "\r\n");
+        fflush(stream);
+}
 
 // Display the contents of a given file
 void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
@@ -68,11 +75,7 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
         strcpy(filetype, "text/plain");
 
     /* print response header */
-    fprintf(stream, "HTTP/1.1 200 OK\n");
-    fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-    fprintf(stream, "Content-type: %s\n", filetype);
-    fprintf(stream, "\r\n");
-    fflush(stream);
+     print_response_header(stream, filetype, sbuf);
    
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
@@ -102,6 +105,7 @@ void parse_url(char filename[], char uri[], char cgiargs[], char *html_root)
     if (uri[strlen(uri) - 1] == '/')
         strcat(filename, "index.html");
 }
+
 
 // Initialize the server socket address configurations  
 void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno)

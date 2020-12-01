@@ -243,15 +243,11 @@ void *handle_connection(void *p_client_socket)
 
     /* get the HTTP request line */
     fgets(buf, BUFSIZE, stream);
-
-    //Request line head! "GET /filename.html";
     printf("%s", buf);
 
     sscanf(buf, "%s %s %s\n", method, uri, version);
 
    
- //compare
-    // 0 means they're requivalent
     if (strcmp(method, "GET") == 0)
     {
         choice = 0;
@@ -290,7 +286,7 @@ void *handle_connection(void *p_client_socket)
 
     /* parse the url (/filename.html)] */
     if (!strstr(uri, "cgi-bin"))
-    { /* static content */
+    { 
         parse_url(filename, uri, cgiargs, html_root);
 
     }
@@ -322,11 +318,7 @@ void *handle_connection(void *p_client_socket)
             strcpy(filetype, "text/plain");
 
         /* print response header */
-        fprintf(stream, "HTTP/1.1 200 OK\n");
-        fprintf(stream, "Content-type: %s\n", filetype);
-        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size);
-        fprintf(stream, "\r\n");
-        fflush(stream);
+        print_response_header(stream, filetype, sbuf);
     }else{
 
         int len = atoi(content_len2) + 1; // curl
@@ -340,11 +332,8 @@ void *handle_connection(void *p_client_socket)
         printf("\nPOST method: \n");
 
         /* print response header */
-        fprintf(stream, "HTTP/1.1 200 OK\n");
-        fprintf(stream, "Content-length: %d\n", (int)sbuf.st_size );
-        fprintf(stream, "Content-type: %s\n", filetype);
-        fprintf(stream, "\r\n");
-        fflush(stream);
+        print_response_header(stream, filetype, sbuf);
+
         char * str = buf;
         send(childfd, str, strlen(str), 0);
     }

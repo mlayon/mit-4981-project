@@ -65,7 +65,7 @@ void print_response_header(FILE *stream,  char filetype[], struct stat sbuf){
 }
 
 // Display the contents of a given file
-void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
+void display_content(int childfd, FILE *stream, int fd, char filename[], char filetype[], struct stat sbuf)
 
 {
     if (strstr(filename, ".html"))
@@ -79,8 +79,7 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
    
     /* Use mmap to return arbitrary-sized response body */
     fd = open(filename, O_RDONLY);
-    
-    p = mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+
   
     FILE *f = fopen(filename, "rb");
     fseek(f, 0, SEEK_END);
@@ -92,7 +91,7 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
     fclose(f);
 
     send(childfd, string, sbuf.st_size, 0);
-    munmap(p, sbuf.st_size);
+
 }
 
 // Parse through the given URL

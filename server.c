@@ -1,11 +1,3 @@
-/* 
-HTTP server that serves static and
- *          dynamic content with the GET method.
- *          usage: ./server 
- *              or ./server --gui 
- *              or ./server -p <portno>
- */
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -26,8 +18,15 @@ HTTP server that serves static and
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-// #include "queue.c"
-// #include "helper.c"
+//#include "queue.c"
+//#include "helper.c"
+
+/**
+ * Team MIT, HTTP server with ncurses GUI that can read GET, HEAD, POST requests. 
+ * ./server : Runs server and uses info in the config file
+ * ./server -gui  : Runs server and opens up GUI for user to set config
+ * ./server -p <portno> : Runs server with portno, other info is same as the config file
+ */
 
 #define BUFSIZE 1024
 #define MAXERRS 16
@@ -36,31 +35,35 @@ pthread_t thread_pool[THREAD_POOL_SIZE];
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t condition_var = PTHREAD_COND_INITIALIZER;
 
-//CONFIG INFORMATION
-char *errorfile;
-//char *html_root = "./docs/docs2";
-//default root
-char *html_root;
+char *errorfile;                /* error file */
+char *html_root;                /* html root */
+
+/** Prototype functions */
 void *handle_connection(void *p_client_socket);
 void *thread_function();
 void start_gui(void);
 
+/**
+ * Main driver that runs the program
+ * @param argc 
+ * @param argv
+ */
 int main(int argc, char **argv)
 {    
-    /* variables for connection management */
+    /* variables for managing connection, gui, and config set up */
     int parentfd;                  /* parent socket */
     int childfd;                   /* child socket */
-    int portno = 0;                    /* port */
-    socklen_t clientlen;                 /* byte size of client's address */
+    int portno = 0;                /* port */
+    socklen_t clientlen;           /* byte size of client's address */
     struct hostent *hostp;         /* client host info */
     char *hostaddrp;               /* dotted decimal host addr string */
     int optval;                    /* flag value for setsockopt */
     struct sockaddr_in serveraddr = {0}; /* server address */
     struct sockaddr_in clientaddr = {0}; /* client address */
-    Config conf;
-    int parse_status;
-    char subprocess;
-    int pid;                /* process id from fork */
+    Config conf;                    /* configuration file */
+    int parse_status;               /* status for parsing */
+    char subprocess;                /* variable for choosing subprocess */
+    int pid;                        /* process id from fork */
 
     // command lines
     if (argc == 2) {
@@ -96,7 +99,6 @@ int main(int argc, char **argv)
     html_root = conf.root;
     errorfile = conf.error;
     
-    
     //first off create a bunch of threads to handle future connections.
     for (int i = 0; i < THREAD_POOL_SIZE; i++)
     {
@@ -107,22 +109,18 @@ int main(int argc, char **argv)
     if (parentfd < 0)
         error("ERROR opening socket");
 
-    /* allows us to restart server immediately */
     optval = 1;
     setsockopt(parentfd, SOL_SOCKET, SO_REUSEADDR,
                (const void *)&optval, sizeof(int));
 
-    /* bind port to socket */
+    /* binding port to socket */
     bind_port(parentfd, serveraddr, portno);
 
     /* getting ready to accept connection requests */
     if (listen(parentfd, 10) < 0) /* allow 10 requests to queue up */
         error("ERROR on listen");
 
-    /* 
-   * main loop: wait for a connection request, parse HTTP,
-   * serve requested content, close connection.
-   */
+
     clientlen = sizeof(clientaddr);
     
     int i = 0;
@@ -137,8 +135,6 @@ int main(int argc, char **argv)
                 error("ERROR on accept");
 
             /* determine who sent the message */
-            //     hostp = gethostbyaddr((const char *)&clientaddr.sin_addr.s_addr,
-            //                           sizeof(clientaddr.sin_addr.s_addr), AF_INET);
             hostp = gethostbyname("127.0.0.1");
             if (hostp == NULL)
                 error("ERROR on gethostbyaddr");
@@ -193,6 +189,9 @@ int main(int argc, char **argv)
     return 0;
 }
 
+/**
+ * Function to manage clients in threads with queue-ing system.
+ */
 void *thread_function()
 {
     while (true)
@@ -212,27 +211,31 @@ void *thread_function()
     }
 }
 
+/**
+ * Function to handle the connection between the server and client
+ * @param p_client_socket pointer of the client socket
+ */
 void *handle_connection(void *p_client_socket)
 {
 
     /* variables for connection I/O */
-    FILE *stream;           /* stream version of childfd */
-    char buf[BUFSIZE];      /* message buffer */
-    char method[BUFSIZE];   /* request method get, head, post*/
-    char uri[BUFSIZE];      /* request url */
-    char version[BUFSIZE];  /* request method */
-    char filename[BUFSIZE]; /* path derived from url */
-    char filetype[BUFSIZE]; /* path derived from url */
-    char cgiargs[BUFSIZE];  /* cgi argument list */
-    char *p = NULL;                /* temporary pointer */
-    int is_static;          /* static request? */
+    FILE *stream;           /* stream version of the child file directory */
+    char buf[BUFSIZE];      /* string array of message buffer */
+    char method[BUFSIZE];   /* request method: get, head, post*/
+    char uri[BUFSIZE];      /* request uri */
+    char version[BUFSIZE];  /* request version */
+    char filename[BUFSIZE]; /* filename parsed from uri */
+    char filetype[BUFSIZE]; /* filetype from message buffer */
+    char cgiargs[BUFSIZE];  
+    char *p = NULL;         /* temporary pointer for file reading*/
     struct stat sbuf;       /* file status */
-    int fd = 0;                 /* static content filedes */
-    int choice = 0;
-    int childfd = *((int *)p_client_socket);
-    char c1[BUFSIZE];  
-    char content_len2[BUFSIZE];  
-    char content_len4[BUFSIZE];  
+    int fd = 0;             /* file des */
+    int choice = 0;         /* function selection for method chosen */
+    char c1[BUFSIZE];       /*string array to hold info from buffer */
+    char content_len2[BUFSIZE];    /* store content length of file for curl */
+    char content_len4[BUFSIZE];    /* storecontent length of file for wget*/
+    int childfd = *((int *)p_client_socket); /* set childfd to client socket */
+
 
     /* open the child socket descriptor as a stream */
     if ((stream = fdopen(childfd, "r+")) == NULL)
@@ -287,8 +290,6 @@ void *handle_connection(void *p_client_socket)
     /* parse the url (/filename.html)] */
     if (!strstr(uri, "cgi-bin"))
     { /* static content */
-        is_static = 1;
-
         parse_url(filename, uri, cgiargs, html_root);
 
     }
@@ -304,7 +305,7 @@ void *handle_connection(void *p_client_socket)
     }
 
     /* Display content */
-    if (is_static && choice == 0)
+    if (choice == 0)
     {
         printf("\nGet method\n");
         display_content(childfd, stream, fd, p, filename, filetype, sbuf);
@@ -353,7 +354,9 @@ void *handle_connection(void *p_client_socket)
     return NULL;
 }
 
-// Creates child process and runs the gui program over it
+/**
+ * Creates a child process from server and creates GUI from it. 
+ */
 void start_gui(void) {
     /*Spawn a child to run the program.*/
     pid_t pid=fork();

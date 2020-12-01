@@ -18,8 +18,8 @@
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-#include "queue.c"
-#include "helper.c"
+//#include "queue.c"
+//#include "helper.c"
 
 /**
  * Team MIT, HTTP server with ncurses GUI that can read GET, HEAD, POST requests. 
@@ -266,7 +266,8 @@ void *handle_connection(void *p_client_socket)
     }
     else
     {
-        get_error_check(childfd, stream, errorfile);
+        cerror(childfd, stream, errorfile);
+        fclose(stream);
         close(childfd);
         fprintf(stderr, "closing connection\n");
         return NULL;

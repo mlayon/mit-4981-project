@@ -56,12 +56,6 @@ void cerror(int childfd, FILE *stream, char *errorfile)
    
 }
 
-// Grabs the error and closes the given file stream
-void get_error_check(int childfd, FILE *stream, char *errorfile)
-{
-    cerror(childfd, stream, errorfile);
-    fclose(stream);
-}
 
 // Display the contents of a given file
 void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)

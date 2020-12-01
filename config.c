@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include "config.h"
 
-// Gets server configuration from a .config file
+// Gets server configuration from a .conf file
 int get_config_file(Config *conf) {
 
     FILE *file;
@@ -13,7 +13,6 @@ int get_config_file(Config *conf) {
     ssize_t read;
     char *key;
     char *value;
-    // char *delimiter = "=";
     
     // Opening file pointer
     file = fopen("config.conf", "r");

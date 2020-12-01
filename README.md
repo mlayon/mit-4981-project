@@ -39,3 +39,5 @@ This sends the data to the server, and is stored in the folder.
 ***OR***
 In another Terminal, type ```curl --data "param1=value1&param2=value2" http://localhost:49157/tester.html``` and run the curl command.
 Curl doesn’t store, but shows that the data has been transferred from client to server and is read.
+## Other Note(s)
+The client.c is just to demonstrate that multiple clients can connect to server at the same time. It cannot make HTTP requests. To assemble this file, run ```gcc client.c -o client``` and run ```./client```. 

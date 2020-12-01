@@ -1,49 +1,56 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
-#include <netdb.h>
+#include <arpa/inet.h>
 
-#define BACKLOG 5
-#define BUF_SIZE 100
+#define PORT 8000
 
-#define PORT 49157
+int main(){
 
-int main(int argc, char *argv[])
-{
-    struct hostent *hostinfo;
-    struct sockaddr_in addr;
-    int fd;
-    ssize_t num_read;
-    char buf[BUF_SIZE];
-    
-    // hostinfo = dc_gethostbyname("127.0.0.1");
-    hostinfo = gethostbyname("127.0.0.1");
-    if (hostinfo == NULL) {
-        perror("cannot get host by name");
-        return 0;
+    int clientSocket, ret;
+    struct sockaddr_in serverAddr;
+    char buffer[1024];
+
+    clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if(clientSocket < 0){
+        printf("[-]Error in connection.\n");
+        exit(1);
     }
-    // fd = dc_socket(AF_INET, SOCK_STREAM, 0);
-    if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        perror("cannot create socket");
-        return 0;
-    }
-    memset(&addr, 0, sizeof(struct sockaddr_in));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons(PORT);
-    addr.sin_addr = *(struct in_addr *) hostinfo->h_addr;
-    // dc_connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
-    connect(fd, (struct sockaddr *)&addr, sizeof(struct sockaddr_in));
-    
-    while((num_read = read(STDIN_FILENO, buf, BUF_SIZE)) > 0)
-    {
-        write(fd, buf, num_read);
-    }
-    
-    close(fd);
+    printf("[+]Client Socket is created.\n");
 
-    return EXIT_SUCCESS;
+    memset(&serverAddr, '\0', sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(PORT);
+    serverAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+    ret = connect(clientSocket, (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+    if(ret < 0){
+        printf("[-]Error in connection.\n");
+        exit(1);
+    }
+    printf("[+]Connected to Server.\n");
+
+    while(1){
+        printf("Client: \t");
+        scanf("%s", &buffer[0]);
+        send(clientSocket, buffer, strlen(buffer), 0);
+
+        if(strcmp(buffer, ":exit") == 0){
+            close(clientSocket);
+            printf("[-]Disconnected from server.\n");
+            exit(1);
+        }
+
+        if(recv(clientSocket, buffer, 1024, 0) < 0){
+            printf("[-]Error in receiving data.\n");
+        }else{
+            printf("Server: \t%s\n", buffer);
+        }
+    }
+
+    return 0;
 }

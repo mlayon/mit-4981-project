@@ -18,8 +18,8 @@
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-#include "queue.c"
-#include "helper.c"
+//#include "queue.c"
+//#include "helper.c"
 
 /**
  * Team MIT, HTTP server with ncurses GUI that can read GET, HEAD, POST requests. 
@@ -240,7 +240,6 @@ void *handle_connection(void *p_client_socket)
     char filetype[BUFSIZE]; /* filetype from message buffer */
     char cgiargs[BUFSIZE];
     struct stat sbuf;                        /* file status */
-    int fd = 0;                              /* file des */
     int choice = 0;                          /* function selection for method chosen */
     char c1[BUFSIZE];                        /*string array to hold info from buffer */
     char content_len_curl[BUFSIZE];         /* store content length of file for curl */
@@ -313,14 +312,14 @@ void *handle_connection(void *p_client_socket)
     if (choice == 0)
     {
         printf("\nGet method\n");
-        display_content(childfd, stream, fd, filename, filetype, sbuf);
+        display_content(childfd, stream, filename, filetype, sbuf);
     }
     else if (choice == 1)
     {
         printf("\nHead method: \n");
 
         /* print response header */
-        print_response_header(stream, filetype, sbuf);
+        print_response_header(stream, filename, filetype, sbuf);
     }
     else
     {
@@ -337,7 +336,7 @@ void *handle_connection(void *p_client_socket)
         printf("\nPOST method: \n");
 
         /* print response header */
-        print_response_header(stream, filetype, sbuf);
+        print_response_header(stream, filename, filetype, sbuf);
 
         char *response = "Server response: ";
         char *str = buf;

@@ -37,6 +37,7 @@ pthread_cond_t condition_var = PTHREAD_COND_INITIALIZER;
 
 char *errorfile; /* error file */
 char *html_root; /* html root */
+ char str[100];
 
 /** Prototype functions */
 void *handle_connection(void *p_client_socket);
@@ -134,7 +135,8 @@ int main(int argc, char **argv)
     if (subprocess == 't')
     {
         while (true)
-        {
+        {       
+     
             //parent process waiting to accept a new connection
             /* wait for a connection request */
             childfd = accept(parentfd, (struct sockaddr *)&clientaddr, &clientlen);
@@ -270,7 +272,7 @@ void *handle_connection(void *p_client_socket)
     }
     else
     {
-        cerror(childfd, stream, errorfile);
+        cerror(childfd, stream, errorfile, 5);
         fclose(stream);
         close(childfd);
         fprintf(stderr, "closing connection\n");
@@ -301,7 +303,7 @@ void *handle_connection(void *p_client_socket)
     /* make sure the file exists */
     if (stat(filename, &sbuf) < 0)
     {
-        cerror(childfd, stream, errorfile);
+        cerror(childfd, stream, errorfile,choice);
         fclose(stream);
         close(childfd);
         fprintf(stderr, "\n*****closing connection*****\n");
@@ -347,6 +349,7 @@ void *handle_connection(void *p_client_socket)
     fclose(stream);
     close(childfd);
     fprintf(stderr, "\n*****closing connection*****\n");
+    exit(EXIT_SUCCESS);
     return NULL;
 }
 

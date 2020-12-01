@@ -8,12 +8,12 @@
 #include <sys/mman.h>
 #include <string.h>
 /*
- * error - wrapper for perror used for bad syscalls
+ * error - wrapper for perror used for bad system calls
  */
 void error(char *msg)
 {
     perror(msg);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 /**
@@ -30,11 +30,15 @@ size_t get_file_size(const char *filename)
     return st.st_size;
 }
 /*
- * cerror - returns an error message to the client
+ * Function to send error message to CLIENTS
+ * @param childfd client fd
+ * @param FILE *stream stream
+ * @param errorfile chosen error file
+ * @param choice http request choice
  */
-void cerror(int childfd, FILE *stream, char *errorfile)
+void cerror(int childfd, FILE *stream, char *errorfile, int choice)
 {
-
+    if(choice == 0){
     int size404 = get_file_size(errorfile);
     /* print response header */
     fprintf(stream, "HTTP/1.1 200 OK\n");
@@ -53,6 +57,13 @@ void cerror(int childfd, FILE *stream, char *errorfile)
     fclose(f);
 
     send(childfd, string, size404, 0);
+    }
+    else{
+        fprintf(stream, "HTTP/1.1 %s %s\n", "404", "File not found");
+        fprintf(stream, "Content-type: text/html\n");
+
+
+    }
 }
 // Function to print out response header
 void print_response_header(FILE *stream, char filename[], char filetype[], struct stat sbuf)

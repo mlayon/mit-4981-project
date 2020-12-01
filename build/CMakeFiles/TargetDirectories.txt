@@ -1,0 +1,4 @@
+/home/irislawly/Documents/datacomm/mit-4981-project/build/CMakeFiles/edit_cache.dir
+/home/irislawly/Documents/datacomm/mit-4981-project/build/CMakeFiles/rebuild_cache.dir
+/home/irislawly/Documents/datacomm/mit-4981-project/build/CMakeFiles/server.dir
+/home/irislawly/Documents/datacomm/mit-4981-project/build/CMakeFiles/gui.dir

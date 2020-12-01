@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/irislawly/Documents/datacomm/mit-4981-project/gui.c
+ncurses.h
+-
+form.h
+-
+string.h
+-
+ctype.h
+-
+stdlib.h
+-
+

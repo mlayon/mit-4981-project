@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/gui.dir/gui.c.o -o gui  -lcurses /usr/lib/x86_64-linux-gnu/libform.so 

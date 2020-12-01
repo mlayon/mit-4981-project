@@ -18,8 +18,8 @@
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-//#include "queue.c"
-//#include "helper.c"
+#include "queue.c"
+#include "helper.c"
 
 /**
  * Team MIT, HTTP server with ncurses GUI that can read GET, HEAD, POST requests. 

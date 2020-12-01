@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/server.dir/server_v2.c.o CMakeFiles/server.dir/config.c.o -o server  -pthread 

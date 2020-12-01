@@ -56,12 +56,14 @@ void cerror(int childfd, FILE *stream, char *errorfile)
    
 }
 
+// Grabs the error and closes the given file stream
 void get_error_check(int childfd, FILE *stream, char *errorfile)
 {
     cerror(childfd, stream, errorfile);
     fclose(stream);
 }
 
+// Display the contents of a given file
 void display_content(int childfd, FILE *stream, int fd, char *p, char filename[], char filetype[], struct stat sbuf)
 
 {
@@ -96,6 +98,7 @@ void display_content(int childfd, FILE *stream, int fd, char *p, char filename[]
     munmap(p, sbuf.st_size);
 }
 
+// Parse through the given URL
 void parse_url(char filename[], char uri[], char cgiargs[], char *html_root)
 {
     strcpy(cgiargs, "");
@@ -106,6 +109,7 @@ void parse_url(char filename[], char uri[], char cgiargs[], char *html_root)
         strcat(filename, "index.html");
 }
 
+// Initialize the server socket address configurations  
 void bind_port(int parentfd, struct sockaddr_in serveraddr, int portno)
 {
 

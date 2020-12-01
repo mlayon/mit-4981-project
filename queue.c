@@ -6,6 +6,7 @@
 node_t *head = NULL;
 node_t *tail = NULL;
 
+// Put clients into thread queue according to client socket
 void enqueue(int *client_socket)
 {
     node_t *newnode = malloc(sizeof(node_t));
@@ -22,6 +23,7 @@ void enqueue(int *client_socket)
     tail = newnode;
 }
 
+// Remove clients from queue
 int *dequeue()
 {
     if (head == NULL)

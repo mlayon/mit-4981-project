@@ -34,7 +34,7 @@ In another terminal, type ```curl -I http://localhost:49157/tester.html``` and r
 
 #### POST
 Our server is able to handle POST requests.  
-In another terminal, type ```wget --post-data "param1=value1&param2=value2 " http://localhost:49157/tester.html```.
+In another terminal, type ```wget --post-data "param1=value1&param2=value2" http://localhost:49157/tester.html```.
 This sends the data to the server, and is stored in the folder.  
 ***OR***  
 In another Terminal, type ```curl --data "param1=value1&param2=value2" http://localhost:49157/tester.html``` and run the curl command.

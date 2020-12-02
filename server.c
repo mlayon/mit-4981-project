@@ -349,7 +349,6 @@ void *handle_connection(void *p_client_socket)
     fclose(stream);
     close(childfd);
     fprintf(stderr, "\n*****closing connection*****\n");
-    exit(EXIT_SUCCESS);
     return NULL;
 }
 

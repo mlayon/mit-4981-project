@@ -1,10 +1,10 @@
 # Team MIT HTTP Server Project
 ### Note: To run this server, you must have CMake Version 3.18 installed on your computer.
 ## Basic Information
-Program written in: C
-Technology used: Sockets, pthreads, NCURSES GUI, subprocesses
-Supports: Linux, FreeBSD and macOS
-HTTP Methods Supported in this Server: GET, POST, HEAD
+Program written in: C  
+Technology used: Sockets, pthreads, NCURSES GUI, subprocesses  
+Supports: Linux, FreeBSD and macOS  
+HTTP Methods Supported in this Server: GET, POST, HEAD  
 ## Set-Up
 First, git clone this repo to a preferred folder. Then, in the Terminal, locate the folder where you cloned this project
 to, and change your directory. Type ```cmake .``` and hit enter. Then, type ```cmake --build .``` and hit enter. This will assemble
@@ -34,7 +34,7 @@ In another terminal, type ```curl -I http://localhost:49157/tester.html``` and r
 
 #### POST
 Our server is able to handle POST requests.  
-In another terminal, type ```wget --post-data "param1=value1&param2=value2 " http://localhost:49157/tester.html```.
+In another terminal, type ```wget --post-data "param1=value1&param2=value2" http://localhost:49157/tester.html```.
 This sends the data to the server, and is stored in the folder.  
 ***OR***  
 In another Terminal, type ```curl --data "param1=value1&param2=value2" http://localhost:49157/tester.html``` and run the curl command.

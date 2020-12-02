@@ -14,12 +14,10 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <stdbool.h>
-// #include "pthreadpool.h"
+#include <ctype.h>
 #include "config.h"
 #include "queue.h"
 #include "helper.h"
-//#include "queue.c"
-//#include "helper.c"
 
 /**
  * Team MIT, HTTP server with ncurses GUI that can read GET, HEAD, POST requests. 
@@ -81,7 +79,23 @@ int main(int argc, char **argv)
     {
         if (strcmp(argv[1], "-p") == 0)
         {
-            portno = atoi(argv[2]);
+            // checking if input is a valid port number
+            char *input = argv[2];
+            int length = strlen (input);
+            if (length == 4 || length == 5) {
+                for (int i=0; i < length; i++) {
+                    if (!isdigit(input[i])){
+                        printf ("Invalid port number\n");
+                        exit(1);
+                    }
+                }
+                portno = atoi(input);
+
+            } else {
+                printf ("Invalid port number\n");
+                exit(1);
+            }
+             
         }
     } // can't have more than 3 args
     else if (argc > 3)

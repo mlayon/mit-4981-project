@@ -21,6 +21,9 @@ Port Number: **49157**
 Threads (T) or Processes (P): **T**  
 Index page: **index.html**  
 404 Not Found Page: **404.html**  
+## Error-Handling for Invalid Inputs  
+When the user enters invalid inputs in GUI or Command-Line, the program will remind the user that this input is an invalid one and then  proceed to just write in the default settings instead when there's an error for that certain config.  
+For example, if the user enters "hello" or "6666___66" as portnumber, the program knows that's not a valid one, so it uses the default setting instead, which is 49157 (see the above section for more information on default settings).  
 ## Features
 #### GET
 Our server is able to handle GET requests.  

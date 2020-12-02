@@ -17,10 +17,10 @@ Hit enter and the server will also be started. You can change other configs in t
 ## Run with Default Settings
 If you just type in ```./server ```in the Terminal, you will be able to run the server with the default settings. Please refer to the next section for default settings.
 ## Default Settings
-Port Number: 49157
-Threads (T) or Processes (P): T
-Index page: index.html
-404 Not Found Page: 404.html
+Port Number: **49157**  
+Threads (T) or Processes (P): **T**  
+Index page: **index.html**  
+404 Not Found Page: **404.html**  
 ## Features
 #### GET
 Our server is able to handle GET requests

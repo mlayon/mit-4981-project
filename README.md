@@ -1,10 +1,10 @@
 # Team MIT HTTP Server Project
 ### Note: To run this server, you must have CMake Version 3.18 installed on your computer.
 ## Basic Information
-Program written in: C
-Technology used: Sockets, pthreads, NCURSES GUI, subprocesses
-Supports: Linux, FreeBSD and macOS
-HTTP Methods Supported in this Server: GET, POST, HEAD
+Program written in: C  
+Technology used: Sockets, pthreads, NCURSES GUI, subprocesses  
+Supports: Linux, FreeBSD and macOS  
+HTTP Methods Supported in this Server: GET, POST, HEAD  
 ## Set-Up
 First, git clone this repo to a preferred folder. Then, in the Terminal, locate the folder where you cloned this project
 to, and change your directory. Type ```cmake .``` and hit enter. Then, type ```cmake --build .``` and hit enter. This will assemble

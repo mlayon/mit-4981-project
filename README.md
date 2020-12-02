@@ -23,17 +23,17 @@ Index page: **index.html**
 404 Not Found Page: **404.html**  
 ## Features
 #### GET
-Our server is able to handle GET requests
+Our server is able to handle GET requests.  
 Run ```http://localhost:49157/tester.html```.  
 ***OR***  
 Open a browser and type ```http://localhost:49157```. 
 
 #### HEAD
-Our server is able to handle HEAD requests
+Our server is able to handle HEAD requests.  
 In another terminal, type ```curl -I http://localhost:49157/tester.html``` and run the curl command.
 
 #### POST
-Our server is able to handle POST requests
+Our server is able to handle POST requests.  
 In another terminal, type ```wget --post-data "param1=value1&param2=value2 " http://localhost:49157/tester.html```.
 This sends the data to the server, and is stored in the folder.  
 ***OR***  

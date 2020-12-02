@@ -1,13 +1,17 @@
 // How to run:
 // gcc -std=c11 -Wall -Werror -pedantic -o gui gui.c -lform -lncurses
+#include <unistd.h>
 #include <ncurses.h>
 #include <form.h>
 #include <string.h>
 #include <ctype.h> // for isspace
 #include <stdlib.h>
+#include <sys/stat.h>
+ #include <fcntl.h> 
 
 #define FIELD_COUNT 4
 size_t strnlen(const char *s, size_t maxlen);
+int access(const char *pathname, int mode);
 static FORM *form;
 static FIELD *field[9];
 static WINDOW *win_body, *win_form;
@@ -17,6 +21,19 @@ static char *keys[] = {
     "root",
     "error"
 };
+
+// Returns 1 if directory exists
+int is_directory_exists(const char *path) {
+    struct stat stats;
+
+    stat(path, &stats);
+
+    // Check for file existence
+    if (S_ISDIR(stats.st_mode))
+        return 1;
+
+    return 0;
+}
 
 // Trims whitespaces to be used for field buffers
 static char* trim_whitespaces(char *str) {
@@ -39,6 +56,15 @@ static char* trim_whitespaces(char *str) {
 	*(end+1) = '\0';
 
 	return str;
+}
+
+// Returns the file name extension
+char *get_filename_ext(char *filename) {
+    char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename) {
+        return "";
+    }
+    return dot + 1;
 }
 
 // Clears the config file
@@ -65,7 +91,70 @@ static void write_config_file(char *key, char *value) {
         printf("error!");
         exit(EXIT_FAILURE);
     }
+    int invalid = 0; // is 1 if input is invalid
 
+     // checking if input is a valid port number
+    int length = strlen (value);
+    if (strcmp(key, "port") == 0) {
+        // if length is of a valid port number 
+        if (length == 4 || length == 5) {
+
+            for (int i=0; i < length; i++) {
+                // if we see a non-digit character, it's an invalid port
+                if (!isdigit(value[i])){
+                    invalid = 1;
+                    break;
+                }
+            }
+        // if length is too short/too long
+        } else {
+            invalid = 1;
+        }
+
+        if (invalid) {
+            printw ("Invalid port number. Setting port to 49157.\n");
+            strcpy(value, "49157");
+        }
+
+    } else if (strcmp(key, "subprocess") == 0) {
+        if (length == 1) {
+            // if character is not in any valid inputs
+            if ((strcmp(value, "t") != 0) && (strcmp(value, "p") != 0)) {
+                invalid = 1;
+            }
+        } else {
+            invalid = 1;
+        }
+        
+        if (invalid) {
+            printw ("Invalid subprocess character. Setting it to threads.\n");
+            strcpy(value, "t");
+        }
+
+    } else if (strcmp(key, "root") == 0) {
+
+        if (!is_directory_exists(value)) {
+            printw ("Invalid directory. Setting it to current directory.\n");
+            strcpy(value, ".");
+        }
+
+    } else if (strcmp(key, "error") == 0) {
+
+        if(access(value, F_OK) != -1) {
+            char *ext = get_filename_ext(value);
+            if ((strcmp(ext, "txt") != 0) && (strcmp(ext, "html") != 0)) {
+                invalid = 1;
+            } 
+        } else {
+            invalid = 1;
+        }   
+        
+        if (invalid) {
+            printw ("Invalid error file. Setting it to 404.html.\n");
+            strcpy(value, "t");
+        }
+    }
+           
     fputs(key, fptr);
     fputs("=", fptr);
     fprintf(fptr, "%s\n", value);
@@ -97,7 +186,7 @@ static void driver(int ch) {
 
 			}
 
-            printw("Configurations written in config.conf");
+            printw("\nConfigurations written in config.conf");
 
 			refresh();
 			pos_form_cursor(form);
@@ -152,7 +241,7 @@ int main() {
     keypad(stdscr, TRUE); // toggling arrows, other keypad btns are usable
 
     win_body = newwin(24, 80, 0, 0);
-    win_form = derwin(win_body, 20, 78, 4, 1);
+    win_form = derwin(win_body, 18, 78, 4, 1);
 
     // printing basic info about gui program
     mvwprintw(win_body, 1, 2, "Configuration File Editor");

@@ -24,8 +24,8 @@ Index page: **index.html**
 ## Features
 #### GET
 Our server is able to handle GET requests
-Run ```http://localhost:49157/tester.html```.
-***OR***
+Run ```http://localhost:49157/tester.html```.  
+***OR***  
 Open a browser and type ```http://localhost:49157```. 
 
 #### HEAD
@@ -35,8 +35,8 @@ In another terminal, type ```curl -I http://localhost:49157/tester.html``` and r
 #### POST
 Our server is able to handle POST requests
 In another terminal, type ```wget --post-data "param1=value1&param2=value2 " http://localhost:49157/tester.html```.
-This sends the data to the server, and is stored in the folder.
-***OR***
+This sends the data to the server, and is stored in the folder.  
+***OR***  
 In another Terminal, type ```curl --data "param1=value1&param2=value2" http://localhost:49157/tester.html``` and run the curl command.
 Curl doesn’t store, but shows that the data has been transferred from client to server and is read.
 ## Other Note(s)
